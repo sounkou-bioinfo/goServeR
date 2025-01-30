@@ -1,0 +1,2 @@
+useDynLib(goserveR, .registration = TRUE)
+export(runServer)

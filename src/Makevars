@@ -1,0 +1,10 @@
+PKG_CFLAGS = -I$(CURDIR)
+PKG_LIBS = -L$(CURDIR) $(CURDIR)/serve.so
+GO = $(which go)
+
+.NOTPARALLEL: all
+
+all: serve.so $(SHLIB)
+
+serve.so: serve.go
+	$(GO) build -o serve.so -buildmode=c-shared serve.go
