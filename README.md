@@ -22,9 +22,10 @@ R CMD INSTALL  .
 ## Example
 
 ```bash
-Rscript -e "goserveR::runServer(addr = '0.0.0.0:8181')" &
+
+Rscript -e "goserveR::runServer(addr = '0.0.0.0:8080')" &
 pid=$!
-curl http://0.0.0.0:8181/${PWD}
+curl -L http://0.0.0.0:8080/${PWD}
 kill -9 $pid
 ```
 
