@@ -8,3 +8,4 @@ Description: This package provides an interface to an HTTP file server written i
   The server supports range requests and unbounded CORS. It uses the cgo package to call Go functions from R, following the guide at https://purrple.cat/blog/2017/05/14/calling-go-from-r/.
 License: MIT
 SystemRequirements: Go (https://golang.org), GNU make
+RoxygenNote: 7.3.2

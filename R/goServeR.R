@@ -1,3 +1,18 @@
+
+
+#' runServer
+#'
+#' Run the go http server
+#'
+#' @param dir directory to serve
+#' @param addr address
+#' @param prefix server prefix
+#'
+#' @return RETURN_DESCRIPTION
+#' @examples
+#' @export
+#' # ADD_EXAMPLES_HERE
+
 runServer <- function(dir = getwd(), addr = "0.0.0.0:8181", prefix = "") {
     # TO : add asserts
     stopifnot(
