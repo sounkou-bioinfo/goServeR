@@ -1,8 +1,8 @@
 repos:
   - repo: local
     hooks:
-      - id: documentation
-        name: Build site
+      - id: R CMD
+        name: document code
         entry: "bash precommit.sh"
         language: system
         always_run: true
