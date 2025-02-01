@@ -1,6 +1,6 @@
-PKG_CXXFLAGS = -I$(CURDIR)
+PKG_CFLAGS = -I$(CURDIR)
 PKG_LIBS = -L$(CURDIR) $(CURDIR)/serve.so
-SRCDIR=$(CURDIR)
+SRCDIR = $(CURDIR)
 GO = $(shell which go)
 
 

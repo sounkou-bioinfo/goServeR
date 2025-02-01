@@ -1,2 +1,6 @@
-^\.vscode/*
-^\.github/*
+^\.vscode/*$
+^\.github/*$
+src/*so$
+^\.git/*$
+^\..Rcheck*$
+^\.gitignore
