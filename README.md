@@ -3,7 +3,7 @@
 This package provides an interface to a simple HTTP file server written in go using Copilot.\
 The server supports range requests and unbounded CORS. It uses the cgo package to call Go functions from R using the R C extension mechanisms. This is an experimentation with the R C extension mechanism without the very convenient Rcpp.
 
-The server is obviously very insecure but useful for my use case of serving local BCF/BAM files to an [ambiorix](https://ambiorix.dev/) app using [igv.js](https://github.com/igvteam/igv.js). This package works on my ubuntu laptop and you need go to be installed. 
+The server is obviously very insecure but useful for my use case of serving local BCF/BAM files to an [ambiorix](https://ambiorix.dev/) app using [igv.js](https://github.com/igvteam/igv.js). This package works on my ubuntu laptop and github runners (see .github/r.yaml ) and a go install is required.
 
 ## INSTALL
 
