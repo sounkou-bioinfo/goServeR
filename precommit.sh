@@ -3,3 +3,4 @@
 cd $(dirname ${0}) || exit
 
 Rscript -e 'roxygen2::roxygenise()'
+R CMD check --no-manual .
