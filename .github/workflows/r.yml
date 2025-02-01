@@ -29,8 +29,9 @@ jobs:
       R_KEEP_PKG_SOURCE: yes
 
     steps:
-      - name: install go 
+      
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-go@v5
         with:
           go-version: '>=1.17.0'
