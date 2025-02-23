@@ -1,5 +1,5 @@
 PKG_CFLAGS = -I$(CURDIR)
-PKG_LIBS = -L$(CURDIR) $(CURDIR)/serve.so
+PKG_LIBS = -L$(CURDIR) $(CURDIR)/serve.a
 SRCDIR = $(CURDIR)
 GO = $(shell which go)
 
@@ -9,7 +9,7 @@ all: serve.so $(SHLIB)
 $(SHLIB) : serve.so
 
 serve.so:
-	echo $(GO) && $(GO) build -o serve.so -buildmode=c-shared $(SRCDIR)/../inst/go/serve.go
+	echo $(GO) && $(GO) build -o serve.a -buildmode=c-archive $(SRCDIR)/../inst/go/serve.go
 
 clean:
-	rm $(SRCDIR)/*.o $(SRCDIR)/symbols.rds
+	rm $(SRCDIR)/*.o $(SRCDIR)/*.a $(SRCDIR)/symbols.rds

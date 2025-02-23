@@ -1,6 +1,7 @@
 ^\.vscode/*$
 ^\.github/*$
-#src/*.so$
+src/*.so$
+src/symbols.rds
 ^\.git/*$
 ^\..Rcheck*$
 ^\.gitignore
