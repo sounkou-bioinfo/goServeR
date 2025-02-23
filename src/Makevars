@@ -4,7 +4,7 @@ SRCDIR = $(CURDIR)
 GO = $(shell which go)
 
 
-all: serve.so $(SHLIB)
+all: serve.a $(SHLIB)
 
 $(SHLIB) : serve.a
 
