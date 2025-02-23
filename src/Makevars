@@ -6,9 +6,9 @@ GO = $(shell which go)
 
 all: serve.so $(SHLIB)
 
-$(SHLIB) : serve.so
+$(SHLIB) : serve.a
 
-serve.so:
+serve.a:
 	echo $(GO) && $(GO) build -o serve.a -buildmode=c-archive $(SRCDIR)/../inst/go/serve.go
 
 clean:
