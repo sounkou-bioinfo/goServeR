@@ -5,3 +5,5 @@
 ^\..Rcheck*$
 ^\.gitignore
 ^\.\.Rcheck/*$
+^\.pre-commit-config.yaml$
+^precommit.sh$

@@ -10,3 +10,6 @@ $(SHLIB) : serve.so
 
 serve.so:
 	echo $(GO) && $(GO) build -o serve.so -buildmode=c-shared $(SRCDIR)/../inst/go/serve.go
+
+clean:
+	rm $(SRCDIR)/*.o $(SRCDIR)/symbols.rds
