@@ -1,6 +1,7 @@
 ^\.vscode/*$
 ^\.github/*$
-src/*so$
+#src/*.so$
 ^\.git/*$
 ^\..Rcheck*$
 ^\.gitignore
+^\.\.Rcheck/*$
