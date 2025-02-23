@@ -16,6 +16,8 @@ go || sudo apt-get install --yes golang
 git clone https://github.com/sounkou-bioinfo/goServeR.git
 cd goServeR/
 R CMD INSTALL  .
+# or
+remotes::install_github("sounkou-bioinfo/goServeR")
 
 ```
 
