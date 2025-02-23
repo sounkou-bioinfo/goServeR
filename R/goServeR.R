@@ -10,7 +10,7 @@
 #'
 #' @return NULL blocks the session
 #' @export
-#'#'@examples
+#'@examples
 #'\dontrun{
 #' # ADD_EXAMPLES_HERE
 #'}
