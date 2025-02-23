@@ -8,11 +8,12 @@
 #' @param addr address
 #' @param prefix server prefix
 #'
-#' @return RETURN_DESCRIPTION
-#' @examples
+#' @return NULL blocks the session
 #' @export
+#'#'@examples
+#'\dontrun{
 #' # ADD_EXAMPLES_HERE
-
+#'}
 runServer <- function(dir = getwd(), addr = "0.0.0.0:8181", prefix = "") {
     # TO : add asserts
     stopifnot(
