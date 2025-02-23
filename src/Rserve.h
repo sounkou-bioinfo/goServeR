@@ -8,7 +8,8 @@
 #include "serve.h"
 
 //go  function
-//extern void RunServer(char* dir, char* addr, char* prefix);
+extern void RunServer(char* dir, char* addr, char* prefix);
+
 //interupt 
 // ref : https://github.com/cran/curl/blob/master/src/interrupt.c
 // https://stackoverflow.com/questions/40563522/r-how-to-write-interruptible-c-function-and-recover-partial-results
