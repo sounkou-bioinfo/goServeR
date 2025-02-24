@@ -1,0 +1,15 @@
+PKG_CFLAGS = -I$(CURDIR)  -std=gnu2x
+PKG_LIBS = -L$(CURDIR) $(CURDIR)/serve.a
+SRCDIR = $(CURDIR)
+GO = $(shell which go)
+
+
+all: serve.a $(SHLIB)
+
+$(SHLIB) : serve.a
+
+serve.a:
+	echo $(GO) && $(GO) build -o serve.a -buildmode=c-archive $(SRCDIR)/../inst/go/serve.go
+
+clean:
+	rm $(SRCDIR)/*.o $(SRCDIR)/*.a $(SRCDIR)/symbols.rds
