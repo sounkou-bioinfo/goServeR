@@ -6,7 +6,7 @@ Author: Sounkou Mahammane Toure
 Maintainer: Sounkou Mahammane Toure <sounkoutoure@gmail.com>
 Description: This package provides an interface to an HTTP file server written in Go using Copilot. 
   The server supports range requests and unbounded CORS. It uses the cgo package to call Go functions from R, following the guide at https://purrple.cat/blog/2017/05/14/calling-go-from-r/.
-License: MIT LICENCE
+License: MIT LICENCE + File Licence
 SystemRequirements: Go (https://golang.org), GNU make
 RoxygenNote: 7.3.2
 Encoding: UTF-8
