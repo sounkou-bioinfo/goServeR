@@ -5,7 +5,7 @@
 #include <R.h>
 #include <Rinternals.h>
 #include <R_ext/Visibility.h>
-//#include "serve.h"
+#include "serve.h"
 
 //go  function, this is also available in serve.h
 extern void RunServer(char* dir, char* addr, char* prefix);
