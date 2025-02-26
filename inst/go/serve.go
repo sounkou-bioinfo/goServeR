@@ -1,6 +1,25 @@
 package main
 /*
-#include <stdio.h>
+#include <R.h>
+#include <Rinternals.h>
+#include <R_ext/Visibility.h>
+#include <stdlib.h> 
+//interupt 
+// ref : https://github.com/cran/curl/blob/master/src/interrupt.c
+// https://stackoverflow.com/questions/40563522/r-how-to-write-interruptible-c-function-and-recover-partial-results
+void check_interrupt_fn(void *dummy) {
+  R_CheckUserInterrupt();
+}
+//
+int pending_interrupt(void) {
+  return !(R_ToplevelExec(check_interrupt_fn, NULL));
+}
+
+typedef int (*R_interupt_fun) (void); 
+
+int bridge_interupter( R_interupt_fun f) {
+  return f();
+}
 */
 import "C"
 import (
@@ -15,7 +34,7 @@ func RunServer(cDir *C.char, cAddr *C.char, cPrefix *C.char) {
     dir := C.GoString(cDir)
     addr := C.GoString(cAddr)
     prefix := C.GoString(cPrefix)
-
+    f_Rinterupt := C.R_interupt_fun(C.pending_interrupt)
     // Set default values if dir or addr are empty
     if dir == "" {
         dir = "."
@@ -38,9 +57,11 @@ func RunServer(cDir *C.char, cAddr *C.char, cPrefix *C.char) {
     log.Fatal(server.ListenAndServe())
 }
 
+
 func loggingMiddleware(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         start := time.Now()
+        fmt.Println(int(C.bridge_interupter(f_Rinterupt)))
         next.ServeHTTP(w, r)
         log.Printf("%s %s %s %s", r.Method, r.RequestURI, r.RemoteAddr, time.Since(start))
     })

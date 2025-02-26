@@ -2,6 +2,14 @@
     "files.associations": {
         "*.rmd": "markdown",
         "stdlib.h": "c",
-        "rdynload.h": "c"
+        "rdynload.h": "c",
+        "bit": "cpp",
+        "compare": "cpp",
+        "cstddef": "cpp",
+        "string": "cpp",
+        "limits": "cpp",
+        "memory": "cpp",
+        "new": "cpp",
+        "functional": "cpp"
     }
 }
