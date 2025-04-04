@@ -1,16 +1,20 @@
-PKG_CFLAGS = -I$(CURDIR) -std=gnu2x
+PKG_CFLAGS = -I$(CURDIR)
 PKG_LIBS = -L$(CURDIR) $(CURDIR)/serve.a
 SRCDIR = $(CURDIR)
 GO = $(shell which go)
-R_INC = $(shell "${R_HOME}/bin${R_ARCH_BIN}/R" CMD config --cppflags)
-R_LDFLAGS = $(shell "${R_HOME}/bin${R_ARCH_BIN}/R" CMD config --ldflags)
+R_INC = $(shell R CMD config --cppflags)
+R_LDFLAGS = $(shell R CMD config --ldflags)
+
+# Define CGO flags at the top
+CGO_CFLAGS_VAL = "$(R_INC)"
+CGO_LDFLAGS_VAL = "$(shell echo "$(R_LDFLAGS)" | sed 's/--/-/g')"
 
 all: serve.a $(SHLIB)
 
 $(SHLIB): serve.a
 
 serve.a:
-	echo $(GO) && set CGO_CFLAGS=$(R_INC) && set CGO_LDFLAGS=$(R_LDFLAGS) && $(GO) build -o serve.a -buildmode=c-archive $(SRCDIR)/go/serve.go
+	echo $(GO) && CGO_CFLAGS=$(CGO_CFLAGS_VAL) CGO_LDFLAGS=$(CGO_LDFLAGS_VAL) $(GO) build -o serve.a -buildmode=c-archive $(SRCDIR)/go/serve.go
 
 clean:
 	rm -f $(SRCDIR)/*.o $(SRCDIR)/*.a $(SRCDIR)/symbols.rds
