@@ -86,6 +86,7 @@ extern "C" {
 #endif
 
 extern void RunServer(char* cDir, char* cAddr, char* cPrefix);
+extern char* StartServer(int port);
 
 #ifdef __cplusplus
 }

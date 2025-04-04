@@ -18,9 +18,9 @@ git clone https://github.com/sounkou-bioinfo/goServeR.git
 cd goServeR/
 R CMD INSTALL  .
 # or
-remotes::install_github("sounkou-bioinfo/goServeR")
+Rscript -e 'remotes::install_github("sounkou-bioinfo/goServeR")'
 # or 
-install.packages('goserveR', repos = c('https://sounkou-bioinfo.r-universe.dev'))
+Rscript -e "install.packages('goserveR', repos = c('https://sounkou-bioinfo.r-universe.dev'))"
 
 ```
 
