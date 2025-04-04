@@ -8,3 +8,4 @@ src/symbols.rds
 ^\.\.Rcheck/*$
 ^\.pre-commit-config.yaml$
 ^precommit.sh$
+^\.\.Rcheck/*$
