@@ -21,6 +21,7 @@ Run the go http server
 }
 \examples{
 \dontrun{
-# ADD_EXAMPLES_HERE
+runServer(dir = ".", addr = "0.0.0.0:8080")
+runServer(dir = "/path/to/files", addr = "localhost:8181", prefix = "/api")
 }
 }

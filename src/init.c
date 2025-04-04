@@ -3,10 +3,12 @@
 #include <R_ext/Rdynload.h>
 #include <stdlib.h>
 #include "Rserve.h"
+#include "interupt.h"
 
-extern void run_server(SEXP, SEXP, SEXP);
+// Forward declare the run_server function
+SEXP run_server(SEXP, SEXP, SEXP);
+
 // Register the native routine
-
 static const R_CallMethodDef CallEntries[] = {
     {"run_server", (DL_FUNC) &run_server, 3},
     {NULL, NULL, 0}

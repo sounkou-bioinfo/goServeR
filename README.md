@@ -27,18 +27,54 @@ install.packages('goserveR', repos = c('https://sounkou-bioinfo.r-universe.dev')
 ## Example
 
 ```bash
-
+# Start the server in the background
 Rscript -e "goserveR::runServer(addr = '0.0.0.0:8080')" &
 pid=$!
 curl -L http://0.0.0.0:8080/${PWD}
 kill -9 $pid
+
+# Or run it interactively and use Ctrl+C to stop
+Rscript -e "goserveR::runServer(addr = '0.0.0.0:8080')"
 ```
+
+## Features
+
+- HTTP file server with range requests support
+- Unbounded CORS for API access
+- Parameter validation for robust operation
+- Graceful shutdown with R interrupt handling (Ctrl+C)
+- Comprehensive test suite for parameter validation
+
+## Testing
+
+The package includes a test suite that validates parameter handling and server functionality:
+
+```r
+# Run tests (skipping actual server tests by default)
+devtools::test()
+
+# To run integration tests that start a real server (manual testing)
+devtools::test(filter = "integration")
+```
+
+Note: Integration tests require the `httr` and `sys` packages and are skipped by default.
 
 ## TODO
 
-- [ ]  Add some assertions to the code
+- [x] Add assertions to the code
+  - [x] Basic path validation
+  - [x] Type checking for parameters
+  - [x] Validation for address format
+  - [x] Better error messages
 
-- [ ]   Incorporate the R interrupt detection to kill the server : this may be done at the C or R binding level
+- [x] Incorporate R interrupt detection to kill the server
+  - [x] Implement interrupt checking in Go code
+  - [x] Add graceful shutdown mechanism
+  - [x] Support for Ctrl+C during server operation
+
+- [x] Add comprehensive tests
+  - [x] Unit tests for parameter validation
+  - [x] Integration tests for server functionality
 
 ## REFERENCES
 

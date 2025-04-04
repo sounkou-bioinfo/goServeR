@@ -1,0 +1,96 @@
+Hmm ... looks like a package
+Converting parsed Rd's to LaTeX 
+Creating pdf output from LaTeX ...
+Warning in texi2dvi(file = file, pdf = TRUE, clean = clean, quiet = quiet,  :
+  texi2dvi script/program not available, using emulation
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex)
+ restricted \write18 enabled.
+entering extended mode
+(./Rd2.tex
+LaTeX2e <2024-11-01> patch level 2
+L3 programming layer <2025-01-18>
+
+(/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/book.cls
+Document Class: book 2024/06/29 v1.4n Standard LaTeX document class
+(/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/bk10.clo)) (/usr/share/R/share/texmf/tex/latex/Rd.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/ifthen.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/iftex/iftex.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/tools/longtable.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/tools/bm.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/alltt.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/tools/verbatim.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/url/url.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/textcomp.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsmath/amsmath.sty
+For additional information on amsmath, use the `?' option.
+(/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsmath/amstext.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsmath/amsgen.sty)) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsmath/amsbsy.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsmath/amsopn.sty)) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsfonts/amsfonts.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsfonts/amssymb.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsfonts/eucal.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/fontenc.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/psnfss/times.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/inconsolata/zi4.sty `inconsolata-zi4' v1.12, 2019/05/17 Text macros for Inconsolata (msharpe) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/xkeyval/xkeyval.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/xkeyval/xkeyval.tex (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/xkeyval/xkvutils.tex (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/xkeyval/keyval.tex))))) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/graphics/color.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/graphics-cfg/color.cfg) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/graphics-def/pdftex.def) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/graphics/mathcolor.ltx)) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/hyperref/hyperref.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/kvsetkeys/kvsetkeys.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/kvdefinekeys/kvdefinekeys.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/pdfescape/pdfescape.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/pdftexcmds/pdftexcmds.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/infwarerr/infwarerr.sty))) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/hycolor/hycolor.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/hyperref/nameref.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/refcount/refcount.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/gettitlestring/gettitlestring.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/kvoptions/kvoptions.sty))) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/etoolbox/etoolbox.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/stringenc/stringenc.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/hyperref/pd1enc.def) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/intcalc/intcalc.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/hyperref/puenc.def) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/bitset/bitset.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/bigintcalc/bigintcalc.sty)) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/atbegshi-ltx.sty)) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/hyperref/hpdftex.def (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/atveryend-ltx.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/rerunfilecheck/rerunfilecheck.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/uniquecounter/uniquecounter.sty)))) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/makeidx.sty)
+Writing index file Rd2.idx
+(/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/psnfss/t1ptm.fd) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def)
+No file Rd2.aux.
+(/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/inconsolata/t1zi4.fd)
+No file Rd2.toc.
+(/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsfonts/umsa.fd) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsfonts/umsb.fd)
+[1{/home/sounkoutoure/.TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/home/sounkoutoure/.TinyTeX/texmf-dist/fonts/enc/dvips/base/8r.enc}{/home/sounkoutoure/.TinyTeX/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc}]
+No file Rd2.ind.
+
+[2] (./Rd2.aux)
+
+Package rerunfilecheck Warning: File `Rd2.out' has changed.
+(rerunfilecheck)                Rerun to get outlines right
+(rerunfilecheck)                or use package `bookmark'.
+
+ )</home/sounkoutoure/.TinyTeX/texmf-dist/fonts/type1/public/inconsolata/Inconsolata-zi4r.pfb></home/sounkoutoure/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></home/sounkoutoure/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></home/sounkoutoure/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></home/sounkoutoure/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
+Output written on Rd2.pdf (2 pages, 62044 bytes).
+Transcript written on Rd2.log.
+This is makeindex, version 2.17 [TeX Live 2023] (kpathsea + Thai support).
+Scanning input file Rd2.idx....done (1 entries accepted, 0 rejected).
+Sorting entries...done (0 comparisons).
+Generating output file Rd2.ind....done (5 lines written, 0 warnings).
+Output written in Rd2.ind.
+Transcript written in Rd2.ilg.
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex)
+ restricted \write18 enabled.
+entering extended mode
+(./Rd2.tex
+LaTeX2e <2024-11-01> patch level 2
+L3 programming layer <2025-01-18>
+
+(/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/book.cls
+Document Class: book 2024/06/29 v1.4n Standard LaTeX document class
+(/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/bk10.clo)) (/usr/share/R/share/texmf/tex/latex/Rd.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/ifthen.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/iftex/iftex.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/tools/longtable.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/tools/bm.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/alltt.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/tools/verbatim.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/url/url.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/textcomp.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsmath/amsmath.sty
+For additional information on amsmath, use the `?' option.
+(/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsmath/amstext.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsmath/amsgen.sty)) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsmath/amsbsy.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsmath/amsopn.sty)) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsfonts/amsfonts.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsfonts/amssymb.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsfonts/eucal.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/fontenc.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/psnfss/times.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/inconsolata/zi4.sty `inconsolata-zi4' v1.12, 2019/05/17 Text macros for Inconsolata (msharpe) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/xkeyval/xkeyval.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/xkeyval/xkeyval.tex (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/xkeyval/xkvutils.tex (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/xkeyval/keyval.tex))))) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/graphics/color.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/graphics-cfg/color.cfg) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/graphics-def/pdftex.def) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/graphics/mathcolor.ltx)) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/hyperref/hyperref.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/kvsetkeys/kvsetkeys.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/kvdefinekeys/kvdefinekeys.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/pdfescape/pdfescape.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/pdftexcmds/pdftexcmds.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/infwarerr/infwarerr.sty))) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/hycolor/hycolor.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/hyperref/nameref.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/refcount/refcount.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/gettitlestring/gettitlestring.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/kvoptions/kvoptions.sty))) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/etoolbox/etoolbox.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/stringenc/stringenc.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/hyperref/pd1enc.def) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/intcalc/intcalc.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/hyperref/puenc.def) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/bitset/bitset.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/bigintcalc/bigintcalc.sty)) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/atbegshi-ltx.sty)) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/hyperref/hpdftex.def (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/atveryend-ltx.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/rerunfilecheck/rerunfilecheck.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/uniquecounter/uniquecounter.sty)))) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/makeidx.sty)
+Writing index file Rd2.idx
+(/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/psnfss/t1ptm.fd) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def) (./Rd2.aux) (./Rd2.out) (./Rd2.out) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/inconsolata/t1zi4.fd) (./Rd2.toc (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsfonts/umsa.fd) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsfonts/umsb.fd))
+[1{/home/sounkoutoure/.TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/home/sounkoutoure/.TinyTeX/texmf-dist/fonts/enc/dvips/base/8r.enc}{/home/sounkoutoure/.TinyTeX/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc}] (./Rd2.ind
+[2]
+
+[3]) (./Rd2.aux)
+
+Package rerunfilecheck Warning: File `Rd2.out' has changed.
+(rerunfilecheck)                Rerun to get outlines right
+(rerunfilecheck)                or use package `bookmark'.
+
+ )</home/sounkoutoure/.TinyTeX/texmf-dist/fonts/type1/public/inconsolata/Inconsolata-zi4r.pfb></home/sounkoutoure/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></home/sounkoutoure/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></home/sounkoutoure/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></home/sounkoutoure/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
+Output written on Rd2.pdf (3 pages, 62748 bytes).
+Transcript written on Rd2.log.
+This is makeindex, version 2.17 [TeX Live 2023] (kpathsea + Thai support).
+Scanning input file Rd2.idx....done (1 entries accepted, 0 rejected).
+Sorting entries...done (0 comparisons).
+Generating output file Rd2.ind....done (5 lines written, 0 warnings).
+Output written in Rd2.ind.
+Transcript written in Rd2.ilg.
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex)
+ restricted \write18 enabled.
+entering extended mode
+(./Rd2.tex
+LaTeX2e <2024-11-01> patch level 2
+L3 programming layer <2025-01-18>
+
+(/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/book.cls
+Document Class: book 2024/06/29 v1.4n Standard LaTeX document class
+(/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/bk10.clo)) (/usr/share/R/share/texmf/tex/latex/Rd.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/ifthen.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/iftex/iftex.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/tools/longtable.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/tools/bm.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/alltt.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/tools/verbatim.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/url/url.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/textcomp.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsmath/amsmath.sty
+For additional information on amsmath, use the `?' option.
+(/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsmath/amstext.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsmath/amsgen.sty)) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsmath/amsbsy.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsmath/amsopn.sty)) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsfonts/amsfonts.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsfonts/amssymb.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsfonts/eucal.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/fontenc.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/psnfss/times.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/inconsolata/zi4.sty `inconsolata-zi4' v1.12, 2019/05/17 Text macros for Inconsolata (msharpe) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/xkeyval/xkeyval.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/xkeyval/xkeyval.tex (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/xkeyval/xkvutils.tex (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/xkeyval/keyval.tex))))) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/graphics/color.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/graphics-cfg/color.cfg) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/graphics-def/pdftex.def) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/graphics/mathcolor.ltx)) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/hyperref/hyperref.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/kvsetkeys/kvsetkeys.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/kvdefinekeys/kvdefinekeys.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/pdfescape/pdfescape.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/pdftexcmds/pdftexcmds.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/infwarerr/infwarerr.sty))) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/hycolor/hycolor.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/hyperref/nameref.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/refcount/refcount.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/gettitlestring/gettitlestring.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/kvoptions/kvoptions.sty))) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/etoolbox/etoolbox.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/stringenc/stringenc.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/hyperref/pd1enc.def) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/intcalc/intcalc.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/hyperref/puenc.def) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/bitset/bitset.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/bigintcalc/bigintcalc.sty)) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/atbegshi-ltx.sty)) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/hyperref/hpdftex.def (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/atveryend-ltx.sty) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/rerunfilecheck/rerunfilecheck.sty (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/generic/uniquecounter/uniquecounter.sty)))) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/base/makeidx.sty)
+Writing index file Rd2.idx
+(/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/psnfss/t1ptm.fd) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def) (./Rd2.aux) (./Rd2.out) (./Rd2.out) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/inconsolata/t1zi4.fd) (./Rd2.toc (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsfonts/umsa.fd) (/home/sounkoutoure/.TinyTeX/texmf-dist/tex/latex/amsfonts/umsb.fd))
+[1{/home/sounkoutoure/.TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/home/sounkoutoure/.TinyTeX/texmf-dist/fonts/enc/dvips/base/8r.enc}{/home/sounkoutoure/.TinyTeX/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc}] (./Rd2.ind
+[2]
+
+[3]) (./Rd2.aux) )</home/sounkoutoure/.TinyTeX/texmf-dist/fonts/type1/public/inconsolata/Inconsolata-zi4r.pfb></home/sounkoutoure/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></home/sounkoutoure/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></home/sounkoutoure/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></home/sounkoutoure/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
+Output written on Rd2.pdf (3 pages, 63376 bytes).
+Transcript written on Rd2.log.
+Saving output to ‘goserveR-manual.pdf’ ...
+Done
+You may want to clean up by 'rm -Rf /tmp/Rtmp1fvrVZ/Rd2pdf1ddb9535fbb10'
