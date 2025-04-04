@@ -10,7 +10,7 @@ all: serve.a $(SHLIB)
 $(SHLIB): serve.a
 
 serve.a:
-	echo $(GO) && CGO_CFLAGS="$(R_INC)" CGO_LDFLAGS="$(R_LDFLAGS)" $(GO) build -o serve.a -buildmode=c-archive $(SRCDIR)/go/serve.go
+	echo $(GO) && CGO_CFLAGS=$(subst --,\-\-,$(R_INC)) CGO_LDFLAGS=$(subst --,\-\-,$(R_LDFLAGS)) $(GO) build -o serve.a -buildmode=c-archive $(SRCDIR)/go/serve.go
 
 clean:
 	rm -f $(SRCDIR)/*.o $(SRCDIR)/*.a $(SRCDIR)/symbols.rds
