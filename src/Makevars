@@ -9,7 +9,7 @@ all: serve.a $(SHLIB)
 $(SHLIB) : serve.a
 
 serve.a:
-	echo $(GO) && $(GO) build -o serve.a -buildmode=c-archive $(SRCDIR)/../inst/go/serve.go
+	echo $(GO) && $(GO) build -o serve.a -buildmode=c-archive $(SRCDIR)/go/serve.go
 
 clean:
 	rm $(SRCDIR)/*.o $(SRCDIR)/*.a $(SRCDIR)/symbols.rds

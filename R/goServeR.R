@@ -1,5 +1,3 @@
-
-
 #' runServer
 #'
 #' Run the go http server
@@ -10,10 +8,10 @@
 #'
 #' @return NULL blocks the session
 #' @export
-#'@examples
-#'\dontrun{
+#' @examples
+#' \dontrun{
 #' # ADD_EXAMPLES_HERE
-#'}
+#' }
 runServer <- function(dir = getwd(), addr = "0.0.0.0:8181", prefix = "") {
     # TO : add asserts
     stopifnot(

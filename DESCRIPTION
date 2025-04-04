@@ -1,7 +1,7 @@
 Package: goserveR
 Type: Package
 Title: HTTP File Server with Range Requests and Unbounded CORS using Go
-Version: 0.1.0
+Version: 0.1.1
 Author: Sounkou Mahammane Toure
 Maintainer: Sounkou Mahammane Toure <sounkoutoure@gmail.com>
 Description: This package provides an interface to an HTTP file server written in Go using Copilot. 

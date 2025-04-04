@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "Rserve.h"
+#include "interupt.h"
 
 // Declare the RunServer function from the shared library
 
@@ -13,7 +14,7 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix) {
     const char* prefix = CHAR(STRING_ELT(r_prefix, 0));
     
     // Call the RunServer function
-    // TO DO : add R interupt
+    // The Go code now handles interrupts
     RunServer((char*)dir, (char*)addr, (char*)prefix);
 
     return R_NilValue; // Return NULL to R

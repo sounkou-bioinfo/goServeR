@@ -1,6 +1,7 @@
 # goServeR
 
-This package provides an interface to a simple HTTP file server written in go using Copilot.\
+This package provides an interface to a simple HTTP file server written in go using Copilot.
+
 The server supports range requests and unbounded CORS. It uses the cgo package to call Go functions from R using the R C extension mechanisms. This is an experimentation with the R C extension mechanism without the very convenient Rcpp.
 
 The server is obviously very insecure but useful for my use case of serving local BCF/BAM files to an [ambiorix](https://ambiorix.dev/) app using [igv.js](https://github.com/igvteam/igv.js). This package works on my ubuntu laptop and github runners (see .github/r.yaml ) and a go install is required.
@@ -18,6 +19,8 @@ cd goServeR/
 R CMD INSTALL  .
 # or
 remotes::install_github("sounkou-bioinfo/goServeR")
+# or 
+install.packages('goserveR', repos = c('https://sounkou-bioinfo.r-universe.dev'))
 
 ```
 
@@ -33,9 +36,9 @@ kill -9 $pid
 
 ## TODO
 
--   Add some assertions to the code
+- [ ]  Add some assertions to the code
 
--   Incorporate the R interrupt detection to kill the server : this may be done at the C or R binding level
+- [ ]   Incorporate the R interrupt detection to kill the server : this may be done at the C or R binding level
 
 ## REFERENCES
 
