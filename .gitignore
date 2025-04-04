@@ -2,3 +2,6 @@ src/*.so
 src/*.o
 build.log
 src/*.a
+..Rcheck
+src/*rds
+src/*rdx
