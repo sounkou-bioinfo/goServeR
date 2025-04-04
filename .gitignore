@@ -5,3 +5,4 @@ src/*.a
 ..Rcheck
 src/*rds
 src/*rdx
+src/serve.h
