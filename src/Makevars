@@ -2,19 +2,22 @@ PKG_CFLAGS = -I$(CURDIR)
 PKG_LIBS = -L$(CURDIR) $(CURDIR)/serve.a
 SRCDIR = $(CURDIR)
 GO = $(shell which go)
-R_INC = $(shell R CMD config --cppflags)
-R_LDFLAGS = $(shell R CMD config --ldflags)
+GOSRC_DIR = $(SRCDIR)/go
+GO_SRCS = $(wildcard $(GOSRC_DIR)/*.go)
 
-# Define CGO flags at the top
-CGO_CFLAGS_VAL = "$(R_INC)"
-CGO_LDFLAGS_VAL = "$(shell echo "$(R_LDFLAGS)" | sed 's/--/-/g')"
+# Define variables for R's configuration
+R_INC = $(shell ${R_HOME}/bin/R CMD config --cppflags)
+R_LDFLAGS = $(shell ${R_HOME}/bin/R CMD config --ldflags)
 
-all: serve.a $(SHLIB)
+OBJECTS = serve.a
 
 $(SHLIB): serve.a
 
-serve.a:
-	echo $(GO) && CGO_CFLAGS=$(CGO_CFLAGS_VAL) CGO_LDFLAGS=$(CGO_LDFLAGS_VAL) $(GO) build -o serve.a -buildmode=c-archive $(SRCDIR)/go/serve.go
+serve.a: $(GO_SRCS)
+	echo $(GO) && \
+	CGO_CFLAGS="$(R_INC)" \
+	CGO_LDFLAGS="$(R_LDFLAGS)" \
+	$(GO) build -o $@ -buildmode=c-archive $(GOSRC_DIR)/serve.go
 
 clean:
 	rm -f $(SRCDIR)/*.o $(SRCDIR)/*.a $(SRCDIR)/symbols.rds
