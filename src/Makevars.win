@@ -1,17 +1,17 @@
-PKG_CFLAGS = -I$(CURDIR)
+w2PKG_CFLAGS = -I$(CURDIR)
 PKG_LIBS = -L$(CURDIR) $(CURDIR)/serve.a
 SRCDIR = $(CURDIR)
 GO = $(shell where go 2> NUL || echo go)
 GOSRC_DIR = $(SRCDIR)/go
 GO_SRCS = $(wildcard $(GOSRC_DIR)/*.go)
+C_SRCS = init.c Rserve.c interupt.c
+OBJECTS = $(patsubst %.c,%.o,$(C_SRCS)) serve.a
 
 # Define variables for R's configuration (Windows paths)
 R_INC = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(gsub('\\', '/', utils::shortPathName(R.home('include'))))")
 R_LDFLAGS = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(paste('-L', gsub('\\', '/', utils::shortPathName(R.home('bin'))), sep=''))")
 
-OBJECTS = serve.a
-
-$(SHLIB): serve.a
+$(SHLIB): $(OBJECTS)
 
 serve.a: $(GO_SRCS)
 	@echo Using $(GO)
@@ -20,4 +20,4 @@ serve.a: $(GO_SRCS)
 	$(GO) build -o $@ -buildmode=c-archive $(GOSRC_DIR)/serve.go
 
 clean:
-	rm -f $(SRCDIR)/*.o $(SRCDIR)/*.a $(SRCDIR)/symbols.rds
+	rm -f $(SRCDIR)/*.o $(SRCDIR)/*.a $(SRCDIR)/symbols.rds $(SRCDIR)/*.so

@@ -4,14 +4,14 @@ SRCDIR = $(CURDIR)
 GO = $(shell which go)
 GOSRC_DIR = $(SRCDIR)/go
 GO_SRCS = $(wildcard $(GOSRC_DIR)/*.go)
+C_SRCS = init.c Rserve.c interupt.c
+OBJECTS = $(patsubst %.c,%.o,$(C_SRCS)) serve.a
 
 # Define variables for R's configuration
 R_INC = $(shell ${R_HOME}/bin/R CMD config --cppflags)
 R_LDFLAGS = $(shell ${R_HOME}/bin/R CMD config --ldflags)
 
-OBJECTS = serve.a
-
-$(SHLIB): serve.a
+$(SHLIB): $(OBJECTS)
 
 serve.a: $(GO_SRCS)
 	echo $(GO) && \
@@ -20,4 +20,4 @@ serve.a: $(GO_SRCS)
 	$(GO) build -o $@ -buildmode=c-archive $(GOSRC_DIR)/serve.go
 
 clean:
-	rm -f $(SRCDIR)/*.o $(SRCDIR)/*.a $(SRCDIR)/symbols.rds
+	rm -f $(SRCDIR)/*.o $(SRCDIR)/*.a $(SRCDIR)/symbols.rds $(SRCDIR)/*.so
