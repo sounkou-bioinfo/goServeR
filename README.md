@@ -1,5 +1,7 @@
 # goServeR
 
+[![Build package](https://github.com/r-universe/sounkou-bioinfo/actions/workflows/build.yml/badge.svg)](https://github.com/r-universe/sounkou-bioinfo/actions/workflows/build.yml)
+
 This package provides an interface to a simple HTTP file server written in go using Copilot.
 
 The server supports range requests and unbounded CORS. It uses the cgo package to call Go functions from R using the R C extension mechanisms. This is an experimentation with the R C extension mechanism without the very convenient Rcpp.
