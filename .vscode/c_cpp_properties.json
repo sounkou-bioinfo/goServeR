@@ -9,7 +9,7 @@
                 "/usr/local/lib/R/site-library/Rcpp/include/**"
             ],
             "defines": [],
-            "compilerPath": "/usr/bin/clang",
+            "compilerPath": "/usr/bin/gcc",
             "cStandard": "c17",
             "cppStandard": "c++11",
             "intelliSenseMode": "linux-clang-x64"

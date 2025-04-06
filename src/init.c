@@ -4,7 +4,6 @@
 #include "goserveR.h"
 
 static const R_CallMethodDef CallEntries[] = {
-    {"serve_start", (DL_FUNC) &serve_start, 1},
     {NULL, NULL, 0}
 };
 

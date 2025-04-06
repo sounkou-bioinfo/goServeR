@@ -119,18 +119,4 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-//export StartServer
-func StartServer(port C.int) *C.char {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello from Go server!")
-	})
-	
-	portStr := fmt.Sprintf(":%d", int(port))
-	go func() {
-		http.ListenAndServe(portStr, nil)
-	}()
-	
-	return C.CString(fmt.Sprintf("Server started on port %d", int(port)))
-}
-
 func main() {}
