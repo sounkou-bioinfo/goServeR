@@ -5,7 +5,7 @@
 #include "Rserve.h"
 
 // Make sure the declaration matches the implementation
-extern SEXP run_server(SEXP, SEXP, SEXP);
+SEXP run_server(SEXP, SEXP, SEXP);
 
 // Register the native routine
 static const R_CallMethodDef CallEntries[] = {
@@ -22,4 +22,5 @@ void R_init_goserveR(DllInfo *dll) {
                 NULL
                 );
     R_useDynamicSymbols(dll, FALSE);
+    R_forceSymbols(dll, TRUE);  // Ensure all symbols are found through the registration table
 }
