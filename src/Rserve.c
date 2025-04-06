@@ -21,15 +21,3 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix) {
     return R_NilValue; // Return NULL to R
 }
 
-// Import the Go function
-extern char* StartServer(int port);
-
-SEXP serve_start(SEXP port) {
-    int port_val = asInteger(port);
-    char* result = StartServer(port_val);
-    SEXP ret = PROTECT(mkString(result));
-    free(result);
-    UNPROTECT(1);
-    return ret;
-}
-
