@@ -1,9 +1,10 @@
 ^\.vscode/*$
 ^\.github/*$
-src/*.so$
-src/symbols.rds
+src/*\.so$
+src/*\.o$
+src/symbols\.rds
 ^\.git/*$
-^\..Rcheck*$
+^\.\.Rcheck*$
 ^\.gitignore
 ^\.\.Rcheck/*$
 ^\.pre-commit-config.yaml$
