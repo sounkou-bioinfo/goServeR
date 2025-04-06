@@ -1,3 +1,6 @@
+#' @useDynLib goserveR, .registration = TRUE
+NULL
+
 #' runServer
 #'
 #' Run the go http server
@@ -30,5 +33,5 @@ runServer <- function(dir = getwd(), addr = "0.0.0.0:8181", prefix = "") {
     if (prefix != "") message("Prefix: ", prefix)
     message("Press Ctrl+C to stop the server")
 
-    .Call("run_server", as.character(dir), as.character(addr), as.character(prefix))
+    .Call(run_server, as.character(dir), as.character(addr), as.character(prefix))
 }
