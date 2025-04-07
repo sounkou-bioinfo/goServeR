@@ -1,6 +1,6 @@
 # goServeR
 
-[![Build package](https://github.com/r-universe/sounkou-bioinfo/actions/workflows/build.yml/badge.svg)](https://github.com/r-universe/sounkou-bioinfo/actions/workflows/build.yml)
+[![goserveR status badge](https://sounkou-bioinfo.r-universe.dev/goserveR/badges/version)](https://sounkou-bioinfo.r-universe.dev/goserveR)
 
 This package provides an interface to a simple HTTP file server written in go using Copilot.
 
