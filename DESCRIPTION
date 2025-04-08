@@ -9,7 +9,6 @@ Description: An R package that integrates with Go for serving web content.
     <https://purrple.cat/blog/2017/05/14/calling-go-from-r/>.
 License: GPL (>= 2)
 SystemRequirements: Go (https://golang.org), GNU make
-OS_type: unix
 RoxygenNote: 7.3.2
 Encoding: UTF-8
 Suggests:
