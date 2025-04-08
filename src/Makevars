@@ -1,4 +1,4 @@
-PKG_CFLAGS = -I$(CURDIR)
+PKG_CFLAGS = -I$(CURDIR) -fPIC
 PKG_LIBS = -L$(CURDIR) $(CURDIR)/serve.a
 SRCDIR = $(CURDIR)
 GO = $(shell which go)
