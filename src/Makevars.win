@@ -1,23 +1,23 @@
-PKG_CFLAGS = -I$(CURDIR)
+PKG_CFLAGS = -I$(CURDIR) 
 PKG_LIBS = -L$(CURDIR) $(CURDIR)/serve.a
 SRCDIR = $(CURDIR)
-GO = $(shell where go 2> NUL || echo go)
+GO = $(shell which go)
 GOSRC_DIR = $(SRCDIR)/go
 GO_SRCS = $(wildcard $(GOSRC_DIR)/*.go)
 C_SRCS = init.c Rserve.c interupt.c
 C_OBJS = $(patsubst %.c,%.o,$(C_SRCS))
 OBJECTS = $(C_OBJS) serve.a
 
-# Define variables for R's configuration (Windows paths)
-R_INC = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(gsub('\\', '/', utils::shortPathName(R.home('include'))))")
-R_LDFLAGS = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(paste('-L', gsub('\\', '/', utils::shortPathName(R.home('bin'))), sep=''))")
+# Define variables for R's configuration
+R_INC = $(shell ${R_HOME}/bin/R CMD config --cppflags)
+R_LDFLAGS = $(shell ${R_HOME}/bin/R CMD config --ldflags)
 
 $(SHLIB): $(OBJECTS)
 
 # First build the Go archive to generate serve.h
 serve.a: $(GO_SRCS)
-	@echo Using $(GO)
-	CGO_CFLAGS="-I$(R_INC)" \
+	echo $(GO) && \
+	CGO_CFLAGS="$(R_INC) -I$(SRCDIR)" \
 	CGO_LDFLAGS="$(R_LDFLAGS)" \
 	$(GO) build -o $@ -buildmode=c-archive $(GOSRC_DIR)/serve.go
 
