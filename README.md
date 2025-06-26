@@ -2,17 +2,18 @@
 
 [![goserveR status badge](https://sounkou-bioinfo.r-universe.dev/goserveR/badges/version)](https://sounkou-bioinfo.r-universe.dev/goserveR)
 
-This package provides an interface to a simple HTTP file server written in go and started using Copilot.
+This package provides an interface to a simple HTTP file server written in go and started using a LLM.
 
 The server supports range requests and unbounded CORS. It uses the cgo package to call Go functions from R using the R C extension mechanisms. This is an experimentation with the R C extension mechanism without the very convenient Rcpp.
 
-The server is obviously very insecure but useful for my use case of serving local BCF/BAM files to an [ambiorix](https://ambiorix.dev/) app using [igv.js](https://github.com/igvteam/igv.js). This package works on  github runners and is (see github/worflows/r.yaml ), can be installed from Universe and requires a go install is required.
+The server is obviously very insecure but useful for my use case of serving local BCF/BAM files to an [ambiorix](https://ambiorix.dev/) app using [igv.js](https://github.com/igvteam/igv.js). This package works on  github runners and is (see github/worflows/r.yaml ), can be installed from r-universe and requires a go installation
 
 ## INSTALL
 
 ```bash
 
-## install golang via apt or binary and put it in the path
+## install golang via apt/yum/brew or binary and put it in the path
+## to build from source
 
 go || sudo apt-get install --yes golang
 ## clone the repo and install
