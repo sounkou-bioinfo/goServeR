@@ -6,7 +6,7 @@ This package provides an interface to a simple HTTP file server written in go an
 
 The server supports range requests and unbounded CORS. It uses the cgo package to call Go functions from R using the R C extension mechanisms. This is an experimentation with the R C extension mechanism without the very convenient Rcpp.
 
-The server is obviously very insecure but useful for my use case of serving local BCF/BAM files to an [ambiorix](https://ambiorix.dev/) app using [igv.js](https://github.com/igvteam/igv.js). This package works on  github runners and is (see github/worflows/r.yaml ), can be installed from r-universe and requires a go installation
+The server is obviously very insecure but useful for my use case of serving local BCF/BAM files to an [ambiorix](https://ambiorix.dev/) app using [igv.js](https://github.com/igvteam/igv.js) (because {httpuv} does not support range requests [as of now](https://github.com/rstudio/httpuv/issues/259)). This can be installed from [r-universe](https://sounkou-bioinfo.r-universe.dev/goserveR) and requires a go installation
 
 ## INSTALL
 
