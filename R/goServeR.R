@@ -71,17 +71,3 @@ shutdownServer <- function(handle) {
 StartServer <- function(dir, addr, prefix, blocking) {
     .Call(RC_StartServer, dir, addr, prefix, blocking)
 }
-
-#' ListServers (advanced/manual use)
-#' List servers (C-level, advanced)
-#' @export
-ListServers <- function() {
-    .Call(RC_ListServers)
-}
-
-#' ShutdownServer (advanced/manual use)
-#' Shutdown a server (C-level, advanced)
-#' @export
-ShutdownServer <- function(handle) {
-    .Call(RC_ShutdownServer, handle)
-}
