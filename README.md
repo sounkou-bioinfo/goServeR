@@ -42,27 +42,19 @@ Rscript -e "goserveR::runServer(addr = '0.0.0.0:8080', blocking = TRUE)"
 
 ## R usage
 
-To use from R—start a blocking server (blocks R session) with
+R starts a blocking server (blocks R session) with
 
 ```r
 library(goserveR)
 runServer(dir = ".", addr = "0.0.0.0:8080")
 ```
 
-To start a background server and get a handle—
+To start a background server and get a handle
 
 ```r
 h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE)
 listServers()
 shutdownServer(h)
-```
-
-For advanced/manual C-level usage—
-
-```r
-h <- StartServer(dir = ".", addr = "0.0.0.0:8080", prefix = "", blocking = FALSE)
-ListServers()
-ShutdownServer(h)
 ```
 
 ## How it works ?
