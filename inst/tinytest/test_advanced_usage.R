@@ -5,7 +5,7 @@ library(tinytest)
 if (interactive() || !nzchar(Sys.getenv("CI"))) {
     h <- goserveR::StartServer(dir = getwd(), addr = "127.0.0.1:8084", prefix = "", blocking = FALSE)
     expect_true(inherits(h, "externalptr"))
-    servers <- goserveR:::ListServers()
+    servers <- listServers()
     expect_true(length(servers) >= 1)
-    goserveR:::ShutdownServer(h)
+    shutdownServer(h)
 }

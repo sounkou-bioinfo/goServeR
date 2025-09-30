@@ -72,3 +72,4 @@ We wrote a standard Go HTTP file server, created a static library from it, and t
 -   https://purrple.cat/blog/2017/05/14/calling-go-from-r/
 -   https://mahowald.github.io/go-ffi/
 -   https://cran.r-project.org/doc/manuals/r-devel/R-exts.pdf
+-   https://github.com/eliben/static-server

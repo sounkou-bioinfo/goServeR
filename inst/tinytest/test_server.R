@@ -12,6 +12,6 @@ if (interactive() || !nzchar(Sys.getenv("CI"))) {
     # StartServer/ShutdownServer advanced usage works
     h2 <- goserveR:::StartServer(dir = getwd(), addr = "127.0.0.1:8183", prefix = "", blocking = FALSE)
     expect_true(inherits(h2, "externalptr"))
-    expect_true(length(goserveR:::ListServers()) >= 1)
-    goserveR:::ShutdownServer(h2)
+    expect_true(length(listServers()) >= 1)
+    shutdownServer(h2)
 }

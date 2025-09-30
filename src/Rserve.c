@@ -59,30 +59,35 @@ static void remove_server(go_server_t* srv) {
 // Thread entry for background server
 static void* server_thread_fn(void* arg) {
     go_server_t* srv = (go_server_t*)arg;
-    // Pass the read end of the pipe to Go as an int
-    RunServerWithShutdown(srv->dir, srv->addr, srv->prefix, srv->shutdown_pipe[0]);
+    RunServerWithShutdown(srv->dir, srv->addr, srv->prefix, srv->cors, srv->coop, srv->tls, srv->silent, srv->certfile, srv->keyfile, srv->shutdown_pipe[0]);
     srv->running = 0;
     return NULL;
 }
 
-SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking) {
+SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_cors, SEXP r_coop, SEXP r_tls, SEXP r_certfile, SEXP r_keyfile, SEXP r_silent) {
     // Check that inputs are character vectors of length 1
     if (TYPEOF(r_dir) != STRSXP || LENGTH(r_dir) != 1 ||
         TYPEOF(r_addr) != STRSXP || LENGTH(r_addr) != 1 ||
         TYPEOF(r_prefix) != STRSXP || LENGTH(r_prefix) != 1 ||
-        TYPEOF(r_blocking) != LGLSXP || LENGTH(r_blocking) != 1) {
-        error("Arguments must be character strings");
+        TYPEOF(r_blocking) != LGLSXP || LENGTH(r_blocking) != 1 ||
+        TYPEOF(r_cors) != LGLSXP || LENGTH(r_cors) != 1 ||
+        TYPEOF(r_coop) != LGLSXP || LENGTH(r_coop) != 1 ||
+        TYPEOF(r_tls) != LGLSXP || LENGTH(r_tls) != 1 ||
+        TYPEOF(r_certfile) != STRSXP || LENGTH(r_certfile) != 1 ||
+        TYPEOF(r_keyfile) != STRSXP || LENGTH(r_keyfile) != 1 ||
+        TYPEOF(r_silent) != LGLSXP || LENGTH(r_silent) != 1) {
+        error("Arguments must be correct types");
     }
-    
-    // Convert R character vectors to C strings
     const char* dir = CHAR(STRING_ELT(r_dir, 0));
     const char* addr = CHAR(STRING_ELT(r_addr, 0));
     const char* prefix = CHAR(STRING_ELT(r_prefix, 0));
-    
-    // Print debug info
-    Rprintf("Starting server with: dir=%s, addr=%s, prefix=%s\n", dir, addr, prefix);
-    
     int blocking = LOGICAL(r_blocking)[0];
+    int cors = LOGICAL(r_cors)[0];
+    int coop = LOGICAL(r_coop)[0];
+    int tls = LOGICAL(r_tls)[0];
+    const char* certfile = CHAR(STRING_ELT(r_certfile, 0));
+    const char* keyfile = CHAR(STRING_ELT(r_keyfile, 0));
+    int silent = LOGICAL(r_silent)[0];
     int shutdown_pipe[2];
     if (pipe(shutdown_pipe) != 0) {
         error("Failed to create shutdown pipe");
@@ -93,12 +98,18 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking) {
         srv->dir = strdup(dir);
         srv->addr = strdup(addr);
         srv->prefix = strdup(prefix);
+        srv->cors = cors;
+        srv->coop = coop;
+        srv->tls = tls;
+        srv->certfile = strdup(certfile);
+        srv->keyfile = strdup(keyfile);
+        srv->silent = silent;
         srv->running = 1;
         srv->shutdown_pipe[0] = shutdown_pipe[0];
         srv->shutdown_pipe[1] = shutdown_pipe[1];
         if (pthread_create(&srv->thread, NULL, server_thread_fn, srv) != 0) {
             close(shutdown_pipe[0]); close(shutdown_pipe[1]);
-            free(srv->dir); free(srv->addr); free(srv->prefix); free(srv);
+            free(srv->dir); free(srv->addr); free(srv->prefix); free(srv->certfile); free(srv->keyfile); free(srv);
             error("Failed to start server thread");
         }
         Rprintf("Server started in blocking mode. Press Ctrl+C to interrupt.\n");
@@ -117,7 +128,7 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking) {
         remove_server(srv);
         close(shutdown_pipe[0]);
         close(shutdown_pipe[1]);
-        free(srv->dir); free(srv->addr); free(srv->prefix); free(srv);
+        free(srv->dir); free(srv->addr); free(srv->prefix); free(srv->certfile); free(srv->keyfile); free(srv);
         return R_NilValue;
     } else {
         // Background: allocate struct, start thread, return extptr
@@ -125,12 +136,18 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking) {
         srv->dir = strdup(dir);
         srv->addr = strdup(addr);
         srv->prefix = strdup(prefix);
+        srv->cors = cors;
+        srv->coop = coop;
+        srv->tls = tls;
+        srv->certfile = strdup(certfile);
+        srv->keyfile = strdup(keyfile);
+        srv->silent = silent;
         srv->running = 1;
         srv->shutdown_pipe[0] = shutdown_pipe[0];
         srv->shutdown_pipe[1] = shutdown_pipe[1];
         if (pthread_create(&srv->thread, NULL, server_thread_fn, srv) != 0) {
             close(shutdown_pipe[0]); close(shutdown_pipe[1]);
-            free(srv->dir); free(srv->addr); free(srv->prefix); free(srv);
+            free(srv->dir); free(srv->addr); free(srv->prefix); free(srv->certfile); free(srv->keyfile); free(srv);
             error("Failed to start server thread");
         }
         add_server(srv);

@@ -5,7 +5,39 @@
 \title{StartServer (advanced/manual use)
 Start a server (C-level, advanced)}
 \usage{
-StartServer(dir, addr, prefix, blocking)
+StartServer(
+  dir,
+  addr,
+  prefix,
+  blocking,
+  cors = FALSE,
+  coop = FALSE,
+  tls = FALSE,
+  certfile = "cert.pem",
+  keyfile = "key.pem",
+  silent = FALSE
+)
+}
+\arguments{
+\item{dir}{directory to serve}
+
+\item{addr}{address}
+
+\item{prefix}{server prefix}
+
+\item{blocking}{logical, if FALSE runs in background and returns a handle}
+
+\item{cors}{logical, enable CORS headers}
+
+\item{coop}{logical, enable COOP/COEP headers}
+
+\item{tls}{logical, enable TLS (HTTPS)}
+
+\item{certfile}{path to TLS certificate file}
+
+\item{keyfile}{path to TLS key file}
+
+\item{silent}{logical, suppress server logs}
 }
 \description{
 StartServer (advanced/manual use)

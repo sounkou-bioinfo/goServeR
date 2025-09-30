@@ -4,7 +4,19 @@
 \alias{runServer}
 \title{runServer}
 \usage{
-runServer(dir = getwd(), addr = "0.0.0.0:8181", prefix = "", blocking = TRUE)
+runServer(
+  dir = getwd(),
+  addr = "0.0.0.0:8181",
+  prefix = "",
+  blocking = TRUE,
+  cors = FALSE,
+  coop = FALSE,
+  tls = FALSE,
+  certfile = "cert.pem",
+  keyfile = "key.pem",
+  silent = FALSE,
+  ...
+)
 }
 \arguments{
 \item{dir}{directory to serve}
@@ -14,6 +26,20 @@ runServer(dir = getwd(), addr = "0.0.0.0:8181", prefix = "", blocking = TRUE)
 \item{prefix}{server prefix}
 
 \item{blocking}{logical, if FALSE runs in background and returns a handle}
+
+\item{cors}{logical, enable CORS headers}
+
+\item{coop}{logical, enable COOP/COEP headers}
+
+\item{tls}{logical, enable TLS (HTTPS)}
+
+\item{certfile}{path to TLS certificate file}
+
+\item{keyfile}{path to TLS key file}
+
+\item{silent}{logical, suppress server logs}
+
+\item{...}{additional arguments passed to the server}
 }
 \value{
 NULL (if blocking) or an external pointer (if non-blocking)
@@ -28,6 +54,9 @@ Run the go http server (blocking or background)
 
 # Start a background server (returns a handle)
 h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE)
+
+# Start a server with CORS and COOP enabled
+h <- runServer(cors = TRUE, coop = TRUE, blocking = FALSE)
 
 # List all running background servers
 listServers()
