@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 package main
 
 /*
@@ -15,7 +18,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 	"time"
 )
 
@@ -94,6 +100,54 @@ func RunServer(cDir *C.char, cAddr *C.char, cPrefix *C.char) {
 	}
 }
 
+//export RunServerWithShutdown
+func RunServerWithShutdown(cDir *C.char, cAddr *C.char, cPrefix *C.char, shutdownFd C.int) {
+	dir := C.GoString(cDir)
+	addr := C.GoString(cAddr)
+	prefix := C.GoString(cPrefix)
+
+	if dir == "" {
+		dir = "."
+	}
+	if addr == "" {
+		addr = "0.0.0.0:8080"
+	}
+	if prefix == "" {
+		prefix = filepath.Clean(dir)
+	}
+
+	mux := http.NewServeMux()
+	fs := http.FileServer(http.Dir(dir))
+	mux.Handle(prefix+"/", corsMiddleware(loggingMiddleware(http.StripPrefix(prefix, fs))))
+
+	server := &http.Server{
+		Addr:    addr,
+		Handler: mux,
+	}
+	serverClosed := make(chan struct{})
+	go func() {
+		fmt.Printf("Starting HTTP server at %s\n", addr)
+		fmt.Printf("Serving directory: %s\n", dir)
+		if prefix != "" {
+			fmt.Printf("Using prefix: %s\n", prefix)
+		}
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+			log.Fatalf("HTTP server error: %v", err)
+		}
+		close(serverClosed)
+	}()
+
+	// Wait for shutdown signal on the pipe
+	buf := make([]byte, 1)
+	shutdownFile := os.NewFile(uintptr(shutdownFd), "shutdown-pipe")
+	_, _ = shutdownFile.Read(buf) // blocks until shutdown
+	fmt.Printf("Shutdown signal received—shutting down HTTP server at %s (prefix: %s)\n", addr, prefix)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_ = server.Shutdown(ctx)
+	<-serverClosed
+}
+
 // loggingMiddleware logs HTTP requests
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -119,4 +173,19 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func main() {}
+func logSignals() {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGPIPE)
+	go func() {
+		for sig := range sigs {
+			log.Printf("[Go] Received signal: %v", sig)
+		}
+	}()
+}
+
+// Only run main when building as a standalone binary, not as a shared library for R
+
+func main() {
+	logSignals()
+	select {} // Block forever for signal testing
+}

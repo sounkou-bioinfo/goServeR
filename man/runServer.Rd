@@ -4,7 +4,7 @@
 \alias{runServer}
 \title{runServer}
 \usage{
-runServer(dir = getwd(), addr = "0.0.0.0:8181", prefix = "")
+runServer(dir = getwd(), addr = "0.0.0.0:8181", prefix = "", blocking = TRUE)
 }
 \arguments{
 \item{dir}{directory to serve}
@@ -12,16 +12,25 @@ runServer(dir = getwd(), addr = "0.0.0.0:8181", prefix = "")
 \item{addr}{address}
 
 \item{prefix}{server prefix}
+
+\item{blocking}{logical, if FALSE runs in background and returns a handle}
 }
 \value{
-NULL blocks the session
+NULL (if blocking) or an external pointer (if non-blocking)
 }
 \description{
-Run the go http server
+Run the go http server (blocking or background)
 }
 \examples{
-\dontrun{
-runServer(dir = ".", addr = "0.0.0.0:8080")
-runServer(dir = "/path/to/files", addr = "localhost:8181", prefix = "/api")
-}
+# Start a blocking server (will block the R session)
+# runServer(dir = ".", addr = "0.0.0.0:8080")
+
+# Start a background server (returns a handle)
+h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE)
+
+# List all running background servers
+listServers()
+
+# Shutdown a background server
+shutdownServer(h)
 }

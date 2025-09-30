@@ -1,19 +1,42 @@
 #include <R.h>
 #include <Rinternals.h>
 #include <R_ext/Rdynload.h>
+#include <R_ext/Boolean.h>
 #include <stdlib.h>
 #include "Rserve.h"
+#include <signal.h>
 
 // Make sure the declaration matches the implementation
-SEXP run_server(SEXP, SEXP, SEXP);
+SEXP run_server(SEXP, SEXP, SEXP, SEXP);
+SEXP list_servers();
+SEXP shutdown_server(SEXP);
 
-// Register the native routine
+// RC-level (raw C) entry points
+SEXP RC_StartServer(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking) {
+    return run_server(r_dir, r_addr, r_prefix, r_blocking);
+}
+SEXP RC_ListServers() {
+    return list_servers();
+}
+SEXP RC_ShutdownServer(SEXP extptr) {
+    return shutdown_server(extptr);
+}
+
+// Register the native routines
 static const R_CallMethodDef CallEntries[] = {
-    {"run_server", (DL_FUNC) &run_server, 3},
+    {"run_server", (DL_FUNC) &run_server, 4},
+    {"list_servers", (DL_FUNC) &list_servers, 0},
+    {"shutdown_server", (DL_FUNC) &shutdown_server, 1},
+    {"RC_StartServer", (DL_FUNC) &RC_StartServer, 4},
+    {"RC_ListServers", (DL_FUNC) &RC_ListServers, 0},
+    {"RC_ShutdownServer", (DL_FUNC) &RC_ShutdownServer, 1},
     {NULL, NULL, 0}
 };
 
+
 void R_init_goserveR(DllInfo *dll) {
+
+
     R_registerRoutines(
                 dll,
                 NULL,

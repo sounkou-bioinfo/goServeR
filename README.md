@@ -37,8 +37,34 @@ curl -L http://0.0.0.0:8080/${PWD}
 kill -9 $pid
 
 # Or run it interactively and use Ctrl+C to stop
-Rscript -e "goserveR::runServer(addr = '0.0.0.0:8080')"
+Rscript -e "goserveR::runServer(addr = '0.0.0.0:8080', blocking = TRUE)"
 ```
+
+## R usage
+
+To use from R—start a blocking server (blocks R session) with
+
+```r
+library(goserveR)
+runServer(dir = ".", addr = "0.0.0.0:8080")
+```
+
+To start a background server and get a handle—
+
+```r
+h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE)
+listServers()
+shutdownServer(h)
+```
+
+For advanced/manual C-level usage—
+
+```r
+h <- StartServer(dir = ".", addr = "0.0.0.0:8080", prefix = "", blocking = FALSE)
+ListServers()
+ShutdownServer(h)
+```
+
 ## How it works ?
 We wrote first a standard go http file server, created a static library out of it and then write the usual R C API wrappers for the cgo (static) library. To incorporate the user interrupt mechanism, we adapted this method form [{curl}](https://stackoverflow.com/questions/40563522/r-how-to-write-interruptible-c-function-and-recover-partial-results) to stop C codes (but we called it from go). We had to link the R shared library to go [see](src/go/serve.go) [and](src/Makevars).
 

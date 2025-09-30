@@ -10,5 +10,6 @@ static void check_interrupt_fn(void *dummy) {
 
 // Implement the pending_interrupt function
 int pending_interrupt(void) {
+  // top level interupt or we modify the pending_interrupt variable
   return !(R_ToplevelExec(check_interrupt_fn, NULL));
 }
