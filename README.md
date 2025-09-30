@@ -66,7 +66,7 @@ ShutdownServer(h)
 ```
 
 ## How it works ?
-We wrote first a standard go http file server, created a static library out of it and then write the usual R C API wrappers for the cgo (static) library. To incorporate the user interrupt mechanism, we adapted this method form [{curl}](https://stackoverflow.com/questions/40563522/r-how-to-write-interruptible-c-function-and-recover-partial-results) to stop C codes (but we called it from go). We had to link the R shared library to go [see](src/go/serve.go) [and](src/Makevars).
+We wrote a standard Go HTTP file server, created a static library from it, and then wrote the usual R C API wrappers for the cgo (static) library. Interrupts are now handled entirely at the C level: the Go server runs in a background thread, and the main C thread periodically checks for user interrupts using the R API. If an interrupt is detected, the C code signals the Go server to shut down. This approach is robust, portable, and keeps all R session control in C, not Go.
 
 ## TODO
 
