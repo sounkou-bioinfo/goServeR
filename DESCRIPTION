@@ -15,4 +15,3 @@ Suggests:
     tinytest,
     httr,
     sys
-OS_type: unix
