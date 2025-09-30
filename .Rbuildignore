@@ -10,4 +10,4 @@ src/symbols\.rds
 ^\.pre-commit-config.yaml$
 ^precommit.sh$
 ^\.\.Rcheck/*$
-^ .lintr$
+^\.lintr$
