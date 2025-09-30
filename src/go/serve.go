@@ -20,6 +20,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -38,11 +39,15 @@ func RunServerWithShutdown(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, 
 	if dir == "" {
 		dir = "."
 	}
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		absDir = filepath.Clean(dir)
+	}
 	if addr == "" {
 		addr = "0.0.0.0:8080"
 	}
 	if prefix == "" {
-		prefix = "/"
+		prefix = ""
 	}
 
 	serveLog := log.New(os.Stdout, "", log.LstdFlags|log.Lmicroseconds)
@@ -51,14 +56,18 @@ func RunServerWithShutdown(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, 
 	}
 
 	mux := http.NewServeMux()
-	fileHandler := serveLogger(serveLog, http.FileServer(http.Dir(dir)))
+	fileHandler := serveLogger(serveLog, http.FileServer(http.Dir(absDir)))
 	if cors {
 		fileHandler = enableCORS(fileHandler)
 	}
 	if coop {
 		fileHandler = enableCOOP(fileHandler)
 	}
-	mux.Handle(prefix, fileHandler)
+	if prefix == "" {
+		mux.Handle("/", fileHandler)
+	} else {
+		mux.Handle(prefix+"/", http.StripPrefix(prefix, fileHandler))
+	}
 
 	srv := &http.Server{
 		Addr:    addr,

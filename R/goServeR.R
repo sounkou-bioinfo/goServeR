@@ -64,12 +64,6 @@ runServer <- function(
         is.logical(silent) && length(silent) == 1
     )
 
-    dir <- normalizePath(dir)
-    # If prefix is empty, set it to the normalized absolute path of the served directory
-    if (is.character(prefix) && length(prefix) == 1 && (is.na(prefix) || prefix == "")) {
-        prefix <- normalizePath(dir)
-    }
-
     if (blocking) {
         invisible(.Call(RC_StartServer, dir, addr, prefix, blocking, cors, coop, tls, certfile, keyfile, silent))
     } else {
