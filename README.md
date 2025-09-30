@@ -65,8 +65,6 @@ We wrote a standard Go HTTP file server, created a static library from it, and t
 - [ ] Try to implement a basic [Rook](https://github.com/jeffreyhorner/Rook) Rook specs interface using ?
   - [ ] issue here is since we elect to not call R from  go routines, we have to go through pipes or similar to get the request to the main R thread. we may use ideas from [background](https://github.com/s-u/background)
 - [ ] Support windows ?
-- [ ] Add SSL because the go standard lib is great !
-
 ## REFERENCES
 
 -   https://purrple.cat/blog/2017/05/14/calling-go-from-r/
