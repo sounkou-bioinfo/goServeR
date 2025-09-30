@@ -1,5 +1,5 @@
 PKG_CFLAGS = -I$(CURDIR) -fPIC
-PKG_LIBS = -L$(CURDIR) $(CURDIR)/serve.a
+PKG_LIBS = -L$(CURDIR) $(CURDIR)/serve.a -lpthread
 SRCDIR = $(CURDIR)
 GO = $(shell which go)
 GOSRC_DIR = $(SRCDIR)/go

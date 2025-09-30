@@ -6,7 +6,8 @@
 #include "interupt.h"
 #include <pthread.h>
 #include <string.h>
-#include <unistd.h> // Added for pipe, close, write declarations
+#include <unistd.h> 
+#include <sys/wait.h>
 
 // Global list of running servers (simple array for demo, use better structure for production)
 #define MAX_SERVERS 16
@@ -60,11 +61,42 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking) {
     // Print debug info
     Rprintf("Starting server with: dir=%s, addr=%s, prefix=%s\n", dir, addr, prefix);
     
-    // Call the RunServer function from Go
     int blocking = LOGICAL(r_blocking)[0];
+    int shutdown_pipe[2];
+    if (pipe(shutdown_pipe) != 0) {
+        error("Failed to create shutdown pipe");
+    }
     if (blocking) {
-        // Foreground: just call Go server (will block)
-        RunServer((char*)dir, (char*)addr, (char*)prefix);
+        // Foreground: run Go server in this process, but in a thread, so we can check for interrupts
+        go_server_t* srv = (go_server_t*)calloc(1, sizeof(go_server_t));
+        srv->dir = strdup(dir);
+        srv->addr = strdup(addr);
+        srv->prefix = strdup(prefix);
+        srv->running = 1;
+        srv->shutdown_pipe[0] = shutdown_pipe[0];
+        srv->shutdown_pipe[1] = shutdown_pipe[1];
+        if (pthread_create(&srv->thread, NULL, server_thread_fn, srv) != 0) {
+            close(shutdown_pipe[0]); close(shutdown_pipe[1]);
+            free(srv->dir); free(srv->addr); free(srv->prefix); free(srv);
+            error("Failed to start server thread");
+        }
+        Rprintf("Server started in blocking mode. Press Ctrl+C to interrupt.\n");
+        add_server(srv);
+        // Now, wait and check for interrupt
+        while (srv->running) {
+            if (pending_interrupt()) {
+                ssize_t _unused = write(shutdown_pipe[1], "x", 1);
+                (void)_unused;
+                break;
+            }
+            usleep(200000); // 200ms
+        }
+        pthread_join(srv->thread, NULL);
+        srv->running = 0;
+        remove_server(srv);
+        close(shutdown_pipe[0]);
+        close(shutdown_pipe[1]);
+        free(srv->dir); free(srv->addr); free(srv->prefix); free(srv);
         return R_NilValue;
     } else {
         // Background: allocate struct, start thread, return extptr
@@ -73,12 +105,10 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking) {
         srv->addr = strdup(addr);
         srv->prefix = strdup(prefix);
         srv->running = 1;
-        if (pipe(srv->shutdown_pipe) != 0) {
-            free(srv->dir); free(srv->addr); free(srv->prefix); free(srv);
-            error("Failed to create shutdown pipe");
-        }
+        srv->shutdown_pipe[0] = shutdown_pipe[0];
+        srv->shutdown_pipe[1] = shutdown_pipe[1];
         if (pthread_create(&srv->thread, NULL, server_thread_fn, srv) != 0) {
-            close(srv->shutdown_pipe[0]); close(srv->shutdown_pipe[1]);
+            close(shutdown_pipe[0]); close(shutdown_pipe[1]);
             free(srv->dir); free(srv->addr); free(srv->prefix); free(srv);
             error("Failed to start server thread");
         }

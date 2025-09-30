@@ -13,6 +13,7 @@ NULL
 #' @return NULL (if blocking) or an external pointer (if non-blocking)
 #' @export
 #' @examples
+#' \dontrun{
 #' # Start a blocking server (will block the R session)
 #' # runServer(dir = ".", addr = "0.0.0.0:8080")
 #'
@@ -24,6 +25,7 @@ NULL
 #'
 #' # Shutdown a background server
 #' shutdownServer(h)
+#' }
 runServer <- function(
     dir = getwd(),
     addr = "0.0.0.0:8181",
@@ -41,9 +43,9 @@ runServer <- function(
 
     dir <- normalizePath(dir)
     if (blocking) {
-        invisible(.Call(run_server, dir, addr, prefix, TRUE))
+        invisible(.Call(RC_StartServer, dir, addr, prefix, TRUE))
     } else {
-        .Call(run_server, dir, addr, prefix, FALSE)
+        .Call(RC_StartServer, dir, addr, prefix, FALSE)
     }
 }
 
@@ -52,7 +54,7 @@ runServer <- function(
 #' @return a list of server info
 #' @export
 listServers <- function() {
-    .Call(list_servers)
+    .Call(RC_list_servers)
 }
 
 #' shutdownServer
@@ -60,7 +62,7 @@ listServers <- function() {
 #' @param handle external pointer returned by runServer(blocking=FALSE)
 #' @export
 shutdownServer <- function(handle) {
-    invisible(.Call(shutdown_server, handle))
+    invisible(.Call(RC_shutdown_server, handle))
 }
 
 #' StartServer (advanced/manual use)

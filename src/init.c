@@ -24,9 +24,8 @@ SEXP RC_ShutdownServer(SEXP extptr) {
 
 // Register the native routines
 static const R_CallMethodDef CallEntries[] = {
-    {"run_server", (DL_FUNC) &run_server, 4},
-    {"list_servers", (DL_FUNC) &list_servers, 0},
-    {"shutdown_server", (DL_FUNC) &shutdown_server, 1},
+    {"RC_list_servers", (DL_FUNC) &list_servers, 0},
+    {"RC_shutdown_server", (DL_FUNC) &shutdown_server, 1},
     {"RC_StartServer", (DL_FUNC) &RC_StartServer, 4},
     {"RC_ListServers", (DL_FUNC) &RC_ListServers, 0},
     {"RC_ShutdownServer", (DL_FUNC) &RC_ShutdownServer, 1},

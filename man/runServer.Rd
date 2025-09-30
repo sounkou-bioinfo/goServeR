@@ -22,6 +22,7 @@ NULL (if blocking) or an external pointer (if non-blocking)
 Run the go http server (blocking or background)
 }
 \examples{
+\dontrun{
 # Start a blocking server (will block the R session)
 # runServer(dir = ".", addr = "0.0.0.0:8080")
 
@@ -33,4 +34,5 @@ listServers()
 
 # Shutdown a background server
 shutdownServer(h)
+}
 }

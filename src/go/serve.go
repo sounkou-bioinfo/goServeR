@@ -4,13 +4,8 @@
 package main
 
 /*
-#include <R.h>
-#include <Rinternals.h>
-#include <R_ext/Visibility.h>
 #include <stdlib.h>
 
-// Instead of redefining, we just declare these functions which are defined in C code
-int pending_interrupt(void);
 */
 import "C"
 import (
@@ -25,81 +20,6 @@ import (
 	"time"
 )
 
-//export RunServer
-func RunServer(cDir *C.char, cAddr *C.char, cPrefix *C.char) {
-	dir := C.GoString(cDir)
-	addr := C.GoString(cAddr)
-	prefix := C.GoString(cPrefix)
-
-	// Set default values if dir or addr are empty
-	if dir == "" {
-		dir = "."
-	}
-	if addr == "" {
-		addr = "0.0.0.0:8080"
-	}
-
-	// Clean and use the full path as the prefix if prefix is empty
-	if prefix == "" {
-		prefix = filepath.Clean(dir)
-	}
-
-	// Create a new ServeMux to avoid conflicts with global handlers
-	mux := http.NewServeMux()
-	fs := http.FileServer(http.Dir(dir))
-	mux.Handle(prefix+"/", corsMiddleware(loggingMiddleware(http.StripPrefix(prefix, fs))))
-
-	// Create server with the new mux
-	server := &http.Server{
-		Addr:    addr,
-		Handler: mux,
-	}
-
-	// Create a channel to signal when the server is done
-	serverClosed := make(chan struct{})
-
-	// Start the server in a goroutine
-	go func() {
-		fmt.Printf("Starting HTTP server at %s\n", addr)
-		fmt.Printf("Serving directory: %s\n", dir)
-		if prefix != "" {
-			fmt.Printf("Using prefix: %s\n", prefix)
-		}
-		if err := server.ListenAndServe(); err != http.ErrServerClosed {
-			log.Fatalf("HTTP server error: %v", err)
-		}
-		close(serverClosed)
-	}()
-
-	// Monitor for R interrupts in a loop
-	for {
-		// Check for interrupt every 300ms (more responsive)
-		time.Sleep(300 * time.Millisecond)
-
-		// If interrupt detected, shutdown the server gracefully
-		// Call the pending_interrupt function directly
-		if int(C.pending_interrupt()) != 0 {
-			fmt.Println("\nR interrupt detected, shutting down server...")
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-
-			if err := server.Shutdown(ctx); err != nil {
-				log.Printf("Error during server shutdown: %v", err)
-			}
-
-			// Wait for server to close or timeout
-			select {
-			case <-serverClosed:
-				fmt.Println("Server shutdown complete")
-			case <-ctx.Done():
-				fmt.Println("Server shutdown timed out")
-			}
-
-			return
-		}
-	}
-}
-
 //export RunServerWithShutdown
 func RunServerWithShutdown(cDir *C.char, cAddr *C.char, cPrefix *C.char, shutdownFd C.int) {
 	dir := C.GoString(cDir)
@@ -113,8 +33,15 @@ func RunServerWithShutdown(cDir *C.char, cAddr *C.char, cPrefix *C.char, shutdow
 		addr = "0.0.0.0:8080"
 	}
 	if prefix == "" {
-		prefix = filepath.Clean(dir)
+		absDir, err := filepath.Abs(dir)
+		if err != nil {
+			prefix = filepath.Clean(dir)
+		} else {
+			prefix = absDir
+		}
 	}
+
+	fmt.Printf("[Go] RunServerWithShutdown called with dir=%s, addr=%s, prefix=%s\n", dir, addr, prefix)
 
 	mux := http.NewServeMux()
 	fs := http.FileServer(http.Dir(dir))
