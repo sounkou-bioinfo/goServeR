@@ -1,5 +1,7 @@
 PKG_CFLAGS = -I$(CURDIR) 
-PKG_LIBS = -L$(CURDIR) $(CURDIR)/serve.a
+# Use -DWIN32 for conditional compilation in C code
+PKG_CPPFLAGS = -DWIN32
+PKG_LIBS = -L$(CURDIR) $(CURDIR)/serve.a -lws2_32 -lwinmm
 SRCDIR = $(CURDIR)
 GO = $(shell which go)
 GOSRC_DIR = $(SRCDIR)/go

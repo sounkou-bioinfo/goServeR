@@ -4,10 +4,31 @@
 #include <stdio.h>
 #include "Rserve.h"
 #include "interupt.h"
+
+#ifdef _WIN32
+#include <windows.h>
+#define THREAD_TYPE HANDLE
+#define THREAD_CREATE(thr, fn, arg) *(thr) = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)(fn), (arg), 0, NULL)
+#define THREAD_JOIN(thr) WaitForSingleObject((thr), INFINITE); CloseHandle(thr)
+#define SLEEP_MS(ms) Sleep(ms)
+#define PIPE_TYPE HANDLE
+#define PIPE_CREATE(p) { HANDLE r, w; CreatePipe(&r, &w, NULL, 0); (p)[0]=r; (p)[1]=w; }
+#define PIPE_WRITE(p, buf, n) { DWORD _w; WriteFile((p)[1], (buf), (n), &_w, NULL); }
+#define PIPE_CLOSE(p) { CloseHandle((p)[0]); CloseHandle((p)[1]); }
+#else
 #include <pthread.h>
-#include <string.h>
-#include <unistd.h> 
-#include <sys/wait.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/uio.h>
+#define THREAD_TYPE pthread_t
+#define THREAD_CREATE(thr, fn, arg) pthread_create((thr), NULL, (fn), (arg))
+#define THREAD_JOIN(thr) pthread_join((thr), NULL)
+#define SLEEP_MS(ms) usleep((ms)*1000)
+#define PIPE_TYPE int
+#define PIPE_CREATE(p) pipe(p)
+#define PIPE_WRITE(p, buf, n) write((p)[1], (buf), (n))
+#define PIPE_CLOSE(p) { close((p)[0]); close((p)[1]); }
+#endif
 
 // Global list of running servers (simple array for demo, use better structure for production)
 #define MAX_SERVERS 16
