@@ -1,7 +1,7 @@
 Package: goserveR
 Type: Package
 Title: HTTP File Server with Range Requests and Unbounded CORS using Go
-Version: 0.1.1-3.90000
+Version: 0.1.2
 Author: Sounkou Mahammane Toure
 Maintainer: Sounkou Mahammane Toure <sounkoutoure@gmail.com>
 Description: An R package that integrates with Go for serving web content. 
