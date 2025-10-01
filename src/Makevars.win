@@ -16,7 +16,7 @@ $(SHLIB): $(OBJECTS)
 serve.a: $(GO_SRCS)
 	echo $(GO) && \
 	CGO_CFLAGS="-I$(SRCDIR)" \
-	$(GO) build -buildmode=c-archive -o $@ $(GOSRC_DIR)/serve.go
+	$(GO) build -buildmode=c-archive -ldflags="-s -w" -o $@ $(GOSRC_DIR)/serve.go
 
 clean:
 	rm -f $(SRCDIR)/*.o $(SRCDIR)/serve.h $(SRCDIR)/*.a $(SRCDIR)/symbols.rds $(SRCDIR)/*.so
