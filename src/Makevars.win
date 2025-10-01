@@ -10,7 +10,8 @@ C_SRCS = init.c Rserve.c interupt.c
 C_OBJS = $(patsubst %.c,%.o,$(C_SRCS))
 OBJECTS = serve.a $(C_OBJS)
 
-$(SHLIB): $(OBJECTS)
+$(SHLIB): $(OBJECTS) goserveR.def
+	$(SHLIB_LINK) -o $@ goserveR.def $(OBJECTS) $(ALL_LIBS)
 
 # First build the Go archive to generate serve.h
 serve.a: $(GO_SRCS)
