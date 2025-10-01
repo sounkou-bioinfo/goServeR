@@ -32,7 +32,7 @@
 #define PIPE_CLOSE(p) { close((p)[0]); close((p)[1]); }
 #endif
 
-// Global list of running servers (simple array for demo, use better structure for production)
+// Global list of running servers 
 #define MAX_SERVERS 16
 static go_server_t* server_list[MAX_SERVERS] = {NULL};
 static int server_count = 0;
