@@ -7,14 +7,16 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <io.h>
+#include <fcntl.h>
 #define THREAD_TYPE HANDLE
-#define THREAD_CREATE(thr, fn, arg) *(thr) = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)(fn), (arg), 0, NULL)
+#define THREAD_CREATE(thr, fn, arg) (*(thr) = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)(fn), (arg), 0, NULL)) != NULL ? 0 : 1
 #define THREAD_JOIN(thr) WaitForSingleObject((thr), INFINITE); CloseHandle(thr)
 #define SLEEP_MS(ms) Sleep(ms)
-#define PIPE_TYPE HANDLE
-#define PIPE_CREATE(p) { HANDLE r, w; CreatePipe(&r, &w, NULL, 0); (p)[0]=r; (p)[1]=w; }
-#define PIPE_WRITE(p, buf, n) { DWORD _w; WriteFile((p)[1], (buf), (n), &_w, NULL); }
-#define PIPE_CLOSE(p) { CloseHandle((p)[0]); CloseHandle((p)[1]); }
+#define PIPE_TYPE int
+#define PIPE_CREATE(p) _pipe(p, 512, _O_BINARY)
+#define PIPE_WRITE(p, buf, n) do { int _wr = _write((p)[1], (buf), (n)); if (_wr < 0) {} } while(0)
+#define PIPE_CLOSE(p) { _close((p)[0]); _close((p)[1]); }
 #else
 #include <pthread.h>
 #include <unistd.h>

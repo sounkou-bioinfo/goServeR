@@ -6,7 +6,16 @@
 #include <R_ext/Visibility.h>
 #include "serve.h"
 #include "interupt.h"
+
+#ifdef _WIN32
+#include <windows.h>
+#define THREAD_TYPE HANDLE
+#define PIPE_TYPE int
+#else
 #include <pthread.h>
+#define THREAD_TYPE pthread_t
+#define PIPE_TYPE int
+#endif
 
 // Go function, this is also available in serve.h
 // The declaration should match the one in serve.h
@@ -15,7 +24,7 @@ extern void RunServerWithShutdown(char* dir, char* addr, char* prefix, int cors,
 
 // Struct to hold server state for background servers
 typedef struct {
-    pthread_t thread; // Thread handle for background server
+    THREAD_TYPE thread; // Thread handle for background server
     char* dir;
     char* addr;
     char* prefix;
@@ -26,7 +35,7 @@ typedef struct {
     char* certfile;
     char* keyfile;
     int running;
-    int shutdown_pipe[2];
+    PIPE_TYPE shutdown_pipe[2];
     // Add more fields as needed
 } go_server_t;
 
