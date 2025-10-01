@@ -1,4 +1,4 @@
-PKG_CFLAGS = -I$(CURDIR) -fPIC
+PKG_CFLAGS = -I$(CURDIR)
 # Use -DWIN32 for conditional compilation in C code
 PKG_CPPFLAGS = -DWIN32 -D_WIN32
 PKG_LIBS = -L$(CURDIR) $(CURDIR)/serve.a -lws2_32 -lwinmm
@@ -19,7 +19,7 @@ $(SHLIB): $(OBJECTS)
 # First build the Go archive to generate serve.h
 serve.a: $(GO_SRCS)
 	echo $(GO) && \
-	CGO_CFLAGS="$(R_INC) -I$(SRCDIR) -fPIC" \
+	CGO_CFLAGS="$(R_INC) -I$(SRCDIR)" \
 	CGO_LDFLAGS="$(R_LDFLAGS)" \
 	$(GO) build -buildmode=c-archive -o $@ $(GOSRC_DIR)/serve.go
 
