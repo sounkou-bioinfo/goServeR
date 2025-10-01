@@ -18,7 +18,7 @@ This package provides an interface to a simple HTTP file server written in go (g
 
 The server supports range requests and unbounded CORS. It uses the cgo package to call Go functions from R using the R C extension mechanisms. This is an experimentation with the R C extension mechanism without the very convenient Rcpp.
 
-The server is obviously very insecure but useful for my use case of serving local BCF/BAM files to an [ambiorix](https://ambiorix.dev/) app using [igv.js](https://github.com/igvteam/igv.js) (because {httpuv} does not support range requests [as of now](https://github.com/rstudio/httpuv/issues/259)). This can be installed from [r-universe](https://sounkou-bioinfo.r-universe.dev/goserveR) and requires a go installation
+The server was very insecure but useful for my use case of serving local BCF/BAM files to an [ambiorix](https://ambiorix.dev/) app using [igv.js](https://github.com/igvteam/igv.js) (because {httpuv} does not support range requests [as of now](https://github.com/rstudio/httpuv/issues/259)). This can be installed from [r-universe](https://sounkou-bioinfo.r-universe.dev/goserveR) and requires a go installation. We've added TLS support and other improvements since the initial version and we will add allowlisting and other security features in the future.
 
 ## INSTALL
 
@@ -109,6 +109,80 @@ shutdownServer(h3)
 length(listServers())
 ```
 
+### TLS/HTTPS Support
+
+The package includes support for TLS/HTTPS connections using certificate and key files. Example certificate and key files are provided in the package for testing purposes:
+
+```{r tls}
+# Get paths to example certificate and key files
+certfile <- system.file("extdata", "cert.pem", package = "goserveR")
+keyfile <- system.file("extdata", "key.pem", package = "goserveR")
+
+# Start an HTTPS server
+h_tls <- runServer(
+  dir = ".", 
+  addr = "127.0.0.1:8443", 
+  tls = TRUE,
+  certfile = certfile,
+  keyfile = keyfile,
+  blocking = FALSE,
+  silent = TRUE
+)
+
+# List servers to confirm it's running
+servers <- listServers()
+for(i in seq_along(servers)) {
+  sprintf("  Server %d: %s on %s\n", i, servers[[i]][1], servers[[i]][2]) |> cat()
+}
+
+# Test the HTTPS server - we'll use system2 with curl since readLines
+# doesn't handle self-signed certificates well
+if (Sys.which("curl") != "") {
+  # Use curl with -k flag to accept self-signed certificate and -L to follow redirects
+  result <- system2("curl", 
+                   args = c("-k", "-s", "-L", paste0("https://127.0.0.1:8443/", normalizePath("."))),
+                   stdout = TRUE, stderr = TRUE)
+  cat("HTTPS server response (first 5 lines):\n")
+  cat(paste(head(result, 5), collapse = "\n"), "\n")
+} else {
+  cat("curl not available - HTTPS server is running but cannot test from R\n")
+}
+
+# Shutdown the TLS server
+shutdownServer(h_tls)
+
+# Verify cleanup
+length(listServers())
+```
+
+**Note**: The included certificate files are for testing purposes only and should not be used in production. For development with browser-trusted certificates, use `mkcert` to generate locally-trusted certificates:
+
+```bash
+# Install mkcert (creates locally-trusted development certificates)
+# On macOS: brew install mkcert
+# On Linux: see https://github.com/FiloSottile/mkcert#installation
+
+# Install the local CA in the system trust store
+mkcert -install
+
+# Generate certificate for localhost and local IP
+mkcert localhost 127.0.0.1 ::1
+
+# This creates localhost+2.pem (certificate) and localhost+2-key.pem (private key)
+# Use these files with the certfile and keyfile parameters
+```
+
+For production use, get proper certificates from a Certificate Authority like Let's Encrypt:
+
+```bash
+# Using certbot for Let's Encrypt (example for Apache/nginx)
+sudo certbot --nginx -d yourdomain.com
+
+# Or generate self-signed certificates (browsers will show warnings)
+openssl genpkey -algorithm RSA -out server.key -pkcs8
+openssl req -new -x509 -key server.key -out server.crt -days 365
+```
+
 ## How it works ?
 We wrote a standard Go HTTP file server, created a static library from it, and then wrote the usual R C API wrappers for the cgo (static) library. Interrupts are now handled entirely at the C level: the Go server runs in a background thread, and the main C thread periodically checks for user interrupts using the R API. If an interrupt is detected, the C code signals the Go server to shut down. This approach is robust, portable, and keeps all R session control in C, not Go.
 
@@ -117,6 +191,8 @@ We wrote a standard Go HTTP file server, created a static library from it, and t
 - [ ] Try to implement a basic [Rook](https://github.com/jeffreyhorner/Rook) Rook specs interface using ?
   - [ ] issue here is since we elect to not call R from  go routines, we have to go through pipes or similar to get the request to the main R thread. we may use ideas from [background](https://github.com/s-u/background)
 - [ ] Support windows ?
+
+
 ## REFERENCES
 
 -   https://purrple.cat/blog/2017/05/14/calling-go-from-r/
