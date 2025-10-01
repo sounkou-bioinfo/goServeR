@@ -41,6 +41,7 @@ Rscript -e "install.packages('goserveR', repos = c('https://sounkou-bioinfo.r-un
 
 ## Usage Example
 
+From the command line, you can start a server in the background and test it with curl
 ```bash
 # Start the server in the background
 Rscript -e "goserveR::runServer(addr = '0.0.0.0:8080')" &
@@ -52,11 +53,10 @@ kill -9 $pid
 Rscript -e "goserveR::runServer(addr = '0.0.0.0:8080', blocking = TRUE)"
 ```
 
-## R usage
 
 R starts a blocking server (blocks R session) with
 
-```{r}
+```{r blocking}
 library(goserveR)
 # set timeout to 5 seconds for demo purpose
 setTimeLimit(elapsed = 5, transient = TRUE)
@@ -66,7 +66,7 @@ setTimeLimit()
 
 To start a background server and get a handle
 
-```{r}
+```{r background}
 h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE)
 listServers()
 currentDir <- normalizePath(".")
