@@ -11,7 +11,8 @@ if (interactive() || !nzchar(Sys.getenv("CI"))) {
         tls = TRUE,
         certfile = certfile,
         keyfile = keyfile,
-        blocking = FALSE
+        blocking = FALSE,
+        prefix = "/test",
     )
     expect_true(inherits(h, "externalptr"))
     expect_true(length(listServers()) >= 1)
