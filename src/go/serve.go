@@ -82,22 +82,41 @@ func RunServerWithShutdown(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, 
 		if useTLS {
 			serveLog.Printf("Serving directory %q on https://%v", dir, addr)
 			if err := srv.ListenAndServeTLS(certFile, keyFile); err != http.ErrServerClosed {
-				log.Fatalf("HTTPS server error: %v", err)
+				serveLog.Printf("HTTPS server error: %v", err)
+				// Signal shutdown on critical error
+				close(serverClosed)
+				return
 			}
 		} else {
 			serveLog.Printf("Serving directory %q on http://%v", dir, addr)
 			if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-				log.Fatalf("HTTP server error: %v", err)
+				serveLog.Printf("HTTP server error: %v", err)
+				// Signal shutdown on critical error
+				close(serverClosed)
+				return
 			}
 		}
 		close(serverClosed)
 	}()
 
-	// Wait for shutdown signal on the pipe
+	// Wait for shutdown signal on the pipe or server error
 	buf := make([]byte, 1)
 	shutdownFile := os.NewFile(uintptr(shutdownFd), "shutdown-pipe")
-	_, _ = shutdownFile.Read(buf) // blocks until shutdown
-	fmt.Printf("Shutdown signal received—shutting down HTTP server at %s (prefix: %s)\n", addr, prefix)
+
+	// Use select to wait for either shutdown signal or server closure
+	done := make(chan bool)
+	go func() {
+		_, _ = shutdownFile.Read(buf) // blocks until shutdown signal
+		done <- true
+	}()
+
+	select {
+	case <-done:
+		serveLog.Printf("Shutdown signal received—shutting down HTTP server at %s (prefix: %s)", addr, prefix)
+	case <-serverClosed:
+		serveLog.Printf("Server closed due to error—shutting down HTTP server at %s (prefix: %s)", addr, prefix)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(ctx)
@@ -140,4 +159,36 @@ func enableCOOP(next http.Handler) http.Handler {
 // Only run main when building as a standalone binary, not as a shared library for R
 func main() {
 	fmt.Println("Standalone mode: no-op main. This is required for c-archive builds but does nothing.")
+}
+
+//export TestShutdownSimulation
+func TestShutdownSimulation() {
+	// Create a pipe to simulate the shutdown mechanism
+	r, w, err := os.Pipe()
+	if err != nil {
+		fmt.Printf("Failed to create pipe: %v\n", err)
+		return
+	}
+	defer r.Close()
+	defer w.Close()
+
+	fmt.Println("Testing shutdown simulation...")
+
+	// Start a minimal server simulation
+	go func() {
+		fmt.Println("Simulated server started, waiting for shutdown signal...")
+		buf := make([]byte, 1)
+		shutdownFile := r
+		_, _ = shutdownFile.Read(buf) // blocks until shutdown
+		fmt.Println("Shutdown signal received in Go!")
+	}()
+
+	// Wait 2 seconds, then signal shutdown
+	time.Sleep(2 * time.Second)
+	fmt.Println("Sending shutdown signal from test...")
+	w.Write([]byte("x"))
+
+	// Give it time to process
+	time.Sleep(500 * time.Millisecond)
+	fmt.Println("Test shutdown simulation complete")
 }

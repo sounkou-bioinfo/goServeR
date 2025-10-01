@@ -64,6 +64,17 @@ runServer <- function(
         is.logical(silent) && length(silent) == 1
     )
 
+    # Additional validation for address format
+    addr_parts <- strsplit(addr, ":")[[1]]
+    if (length(addr_parts) != 2) {
+        stop("Address must be in format 'host:port'")
+    }
+
+    port <- as.numeric(addr_parts[2])
+    if (is.na(port) || port < 1 || port > 65535) {
+        stop("Port must be a number between 1 and 65535")
+    }
+
     if (blocking) {
         invisible(.Call(RC_StartServer, dir, addr, prefix, blocking, cors, coop, tls, certfile, keyfile, silent))
     } else {

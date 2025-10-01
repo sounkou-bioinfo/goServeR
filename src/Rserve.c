@@ -174,6 +174,7 @@ SEXP list_servers() {
 }
 
 SEXP shutdown_server(SEXP extptr) {
+    if (TYPEOF(extptr) != EXTPTRSXP) return R_NilValue;  // Handle NULL and other types
     go_server_t* srv = (go_server_t*)R_ExternalPtrAddr(extptr);
     if (!srv) return R_NilValue;
     if (srv->running) {
