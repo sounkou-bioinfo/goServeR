@@ -26,7 +26,7 @@
 #define SLEEP_MS(ms) usleep((ms)*1000)
 #define PIPE_TYPE int
 #define PIPE_CREATE(p) pipe(p)
-#define PIPE_WRITE(p, buf, n) write((p)[1], (buf), (n))
+#define PIPE_WRITE(p, buf, n) do { ssize_t _wr = write((p)[1], (buf), (n)); if (_wr < 0) {} } while(0)
 #define PIPE_CLOSE(p) { close((p)[0]); close((p)[1]); }
 #endif
 
@@ -88,12 +88,11 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
     const char* certfile = CHAR(STRING_ELT(r_certfile, 0));
     const char* keyfile = CHAR(STRING_ELT(r_keyfile, 0));
     int silent = LOGICAL(r_silent)[0];
-    int shutdown_pipe[2];
-    if (pipe(shutdown_pipe) != 0) {
+    PIPE_TYPE shutdown_pipe[2];
+    if (PIPE_CREATE(shutdown_pipe) != 0) {
         error("Failed to create shutdown pipe");
     }
     if (blocking) {
-        // Foreground: run Go server in this process, but in a thread, so we can check for interrupts
         go_server_t* srv = (go_server_t*)calloc(1, sizeof(go_server_t));
         srv->dir = strdup(dir);
         srv->addr = strdup(addr);
@@ -107,31 +106,27 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
         srv->running = 1;
         srv->shutdown_pipe[0] = shutdown_pipe[0];
         srv->shutdown_pipe[1] = shutdown_pipe[1];
-        if (pthread_create(&srv->thread, NULL, server_thread_fn, srv) != 0) {
-            close(shutdown_pipe[0]); close(shutdown_pipe[1]);
+        if (THREAD_CREATE(&srv->thread, server_thread_fn, srv) != 0) {
+            PIPE_CLOSE(shutdown_pipe);
             free(srv->dir); free(srv->addr); free(srv->prefix); free(srv->certfile); free(srv->keyfile); free(srv);
             error("Failed to start server thread");
         }
         Rprintf("Server started in blocking mode. Press Ctrl+C to interrupt.\n");
         add_server(srv);
-        // Now, wait and check for interrupt
         while (srv->running) {
             if (pending_interrupt()) {
-                ssize_t _unused = write(shutdown_pipe[1], "x", 1);
-                (void)_unused;
+                PIPE_WRITE(shutdown_pipe, "x", 1);
                 break;
             }
-            usleep(200000); // 200ms
+            SLEEP_MS(200);
         }
-        pthread_join(srv->thread, NULL);
+        THREAD_JOIN(srv->thread);
         srv->running = 0;
         remove_server(srv);
-        close(shutdown_pipe[0]);
-        close(shutdown_pipe[1]);
+        PIPE_CLOSE(shutdown_pipe);
         free(srv->dir); free(srv->addr); free(srv->prefix); free(srv->certfile); free(srv->keyfile); free(srv);
         return R_NilValue;
     } else {
-        // Background: allocate struct, start thread, return extptr
         go_server_t* srv = (go_server_t*)calloc(1, sizeof(go_server_t));
         srv->dir = strdup(dir);
         srv->addr = strdup(addr);
@@ -145,14 +140,14 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
         srv->running = 1;
         srv->shutdown_pipe[0] = shutdown_pipe[0];
         srv->shutdown_pipe[1] = shutdown_pipe[1];
-        if (pthread_create(&srv->thread, NULL, server_thread_fn, srv) != 0) {
-            close(shutdown_pipe[0]); close(shutdown_pipe[1]);
+        if (THREAD_CREATE(&srv->thread, server_thread_fn, srv) != 0) {
+            PIPE_CLOSE(shutdown_pipe);
             free(srv->dir); free(srv->addr); free(srv->prefix); free(srv->certfile); free(srv->keyfile); free(srv);
             error("Failed to start server thread");
         }
         add_server(srv);
         SEXP extptr = PROTECT(R_MakeExternalPtr(srv, R_NilValue, R_NilValue));
-        R_RegisterCFinalizerEx(extptr, go_server_finalizer, 1); // use 1 instead of TRUE
+        R_RegisterCFinalizerEx(extptr, go_server_finalizer, 1);
         UNPROTECT(1);
         return extptr;
     }
@@ -180,10 +175,8 @@ SEXP shutdown_server(SEXP extptr) {
     go_server_t* srv = (go_server_t*)R_ExternalPtrAddr(extptr);
     if (!srv) return R_NilValue;
     if (srv->running) {
-        // Signal shutdown to Go by writing to the pipe
-        ssize_t _unused = write(srv->shutdown_pipe[1], "x", 1);
-        (void)_unused;
-        pthread_join(srv->thread, NULL);
+        PIPE_WRITE(srv->shutdown_pipe, "x", 1);
+        THREAD_JOIN(srv->thread);
         srv->running = 0;
     }
     remove_server(srv);
@@ -194,12 +187,10 @@ void go_server_finalizer(SEXP extptr) {
     go_server_t* srv = (go_server_t*)R_ExternalPtrAddr(extptr);
     if (!srv) return;
     if (srv->running) {
-        ssize_t _unused = write(srv->shutdown_pipe[1], "x", 1);
-        (void)_unused;
-        pthread_join(srv->thread, NULL);
+        PIPE_WRITE(srv->shutdown_pipe, "x", 1);
+        THREAD_JOIN(srv->thread);
     }
-    close(srv->shutdown_pipe[0]);
-    close(srv->shutdown_pipe[1]);
+    PIPE_CLOSE(srv->shutdown_pipe);
     free(srv->dir); free(srv->addr); free(srv->prefix); free(srv);
     R_ClearExternalPtr(extptr);
 }
