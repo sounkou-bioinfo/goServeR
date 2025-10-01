@@ -63,11 +63,8 @@ func RunServerWithShutdown(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, 
 	if coop {
 		fileHandler = enableCOOP(fileHandler)
 	}
-	if prefix == "" {
-		mux.Handle("/", fileHandler)
-	} else {
-		mux.Handle(prefix+"/", http.StripPrefix(prefix, fileHandler))
-	}
+
+	mux.Handle(prefix+"/", http.StripPrefix(prefix, fileHandler))
 
 	srv := &http.Server{
 		Addr:    addr,

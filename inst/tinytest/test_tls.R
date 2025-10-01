@@ -15,5 +15,8 @@ if (interactive() || !nzchar(Sys.getenv("CI"))) {
     )
     expect_true(inherits(h, "externalptr"))
     expect_true(length(listServers()) >= 1)
+    while (1) {
+        Sys.sleep(1)
+    }
     shutdownServer(h)
 }
