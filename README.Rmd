@@ -59,6 +59,7 @@ R starts a blocking server (blocks R session) with
 ```{r blocking}
 library(goserveR)
 # set timeout to 5 seconds for demo purpose
+# this will stop the server after 5 seconds
 setTimeLimit(elapsed = 5, transient = TRUE)
 runServer(dir = ".", addr = "0.0.0.0:8080")
 setTimeLimit()
@@ -70,7 +71,8 @@ To start a background server and get a handle
 h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE)
 listServers()
 currentDir <- normalizePath(".")
-readLines(paste0("http://0.0.0.0:8080/", currentDir))
+readLines(paste0("http://0.0.0.0:8080/", currentDir)) |>
+  head(10)
 shutdownServer(h)
 ```
 

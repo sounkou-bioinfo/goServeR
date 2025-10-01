@@ -63,6 +63,7 @@ R starts a blocking server (blocks R session) with
 ``` r
 library(goserveR)
 # set timeout to 5 seconds for demo purpose
+# this will stop the server after 5 seconds
 setTimeLimit(elapsed = 5, transient = TRUE)
 runServer(dir = ".", addr = "0.0.0.0:8080")
 #> Server started in blocking mode. Press Ctrl+C to interrupt.
@@ -77,31 +78,18 @@ listServers()
 #> [[1]]
 #> [1] "."            "0.0.0.0:8080" ""
 currentDir <- normalizePath(".")
-readLines(paste0("http://0.0.0.0:8080/", currentDir))
-#>  [1] "<pre>"                                                                      
-#>  [2] "<a href=\".Rbuildignore\">.Rbuildignore</a>"                                
-#>  [3] "<a href=\".Rinstignore\">.Rinstignore</a>"                                  
-#>  [4] "<a href=\".git/\">.git/</a>"                                                
-#>  [5] "<a href=\".github/\">.github/</a>"                                          
-#>  [6] "<a href=\".gitignore\">.gitignore</a>"                                      
-#>  [7] "<a href=\".lintr\">.lintr</a>"                                              
-#>  [8] "<a href=\".pre-commit-config.yaml\">.pre-commit-config.yaml</a>"            
-#>  [9] "<a href=\".vscode/\">.vscode/</a>"                                          
-#> [10] "<a href=\"DESCRIPTION\">DESCRIPTION</a>"                                    
-#> [11] "<a href=\"NAMESPACE\">NAMESPACE</a>"                                        
-#> [12] "<a href=\"NEWS.md\">NEWS.md</a>"                                            
-#> [13] "<a href=\"R/\">R/</a>"                                                      
-#> [14] "<a href=\"README.Rmd\">README.Rmd</a>"                                      
-#> [15] "<a href=\"README.html\">README.html</a>"                                    
-#> [16] "<a href=\"README.md\">README.md</a>"                                        
-#> [17] "<a href=\"Rserve.c\">Rserve.c</a>"                                          
-#> [18] "<a href=\"goserveR_0.1.2-0.90000.tar.gz\">goserveR_0.1.2-0.90000.tar.gz</a>"
-#> [19] "<a href=\"inst/\">inst/</a>"                                                
-#> [20] "<a href=\"man/\">man/</a>"                                                  
-#> [21] "<a href=\"precommit.sh\">precommit.sh</a>"                                  
-#> [22] "<a href=\"src/\">src/</a>"                                                  
-#> [23] "<a href=\"tools/\">tools/</a>"                                              
-#> [24] "</pre>"
+readLines(paste0("http://0.0.0.0:8080/", currentDir)) |>
+  head(10)
+#>  [1] "<pre>"                                                          
+#>  [2] "<a href=\".Rbuildignore\">.Rbuildignore</a>"                    
+#>  [3] "<a href=\".Rinstignore\">.Rinstignore</a>"                      
+#>  [4] "<a href=\".git/\">.git/</a>"                                    
+#>  [5] "<a href=\".github/\">.github/</a>"                              
+#>  [6] "<a href=\".gitignore\">.gitignore</a>"                          
+#>  [7] "<a href=\".lintr\">.lintr</a>"                                  
+#>  [8] "<a href=\".pre-commit-config.yaml\">.pre-commit-config.yaml</a>"
+#>  [9] "<a href=\".vscode/\">.vscode/</a>"                              
+#> [10] "<a href=\"DESCRIPTION\">DESCRIPTION</a>"
 shutdownServer(h)
 ```
 
