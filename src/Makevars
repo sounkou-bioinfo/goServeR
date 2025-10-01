@@ -6,12 +6,12 @@ GOSRC_DIR = $(SRCDIR)/go
 GO_SRCS = $(wildcard $(GOSRC_DIR)/*.go)
 C_SRCS = init.c Rserve.c interupt.c
 C_OBJS = $(patsubst %.c,%.o,$(C_SRCS))
-OBJECTS = serve.a
+OBJECTS = serve.a $(C_OBJS)
 
 $(SHLIB): $(OBJECTS)
 
 # First build the Go archive to generate serve.h
-serve.a: $(GO_SRCS) clean
+serve.a: $(GO_SRCS)
 	echo $(GO) && \
 	$(GO) build -o $@ -buildmode=c-archive $(GOSRC_DIR)/serve.go
 
