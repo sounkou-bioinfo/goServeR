@@ -32,37 +32,59 @@
 #define PIPE_CLOSE(p) { close((p)[0]); close((p)[1]); }
 #endif
 
-// Global list of running servers 
+// Global list of running servers with thread safety
 #define MAX_SERVERS 16
 static go_server_t* server_list[MAX_SERVERS] = {NULL};
 static int server_count = 0;
+#ifndef _WIN32
+static pthread_mutex_t server_list_mutex = PTHREAD_MUTEX_INITIALIZER;
+#define LOCK_SERVER_LIST() pthread_mutex_lock(&server_list_mutex)
+#define UNLOCK_SERVER_LIST() pthread_mutex_unlock(&server_list_mutex)
+#else
+static CRITICAL_SECTION server_list_cs;
+static int server_list_cs_init = 0;
+#define LOCK_SERVER_LIST() do { if (!server_list_cs_init) { InitializeCriticalSection(&server_list_cs); server_list_cs_init = 1; } EnterCriticalSection(&server_list_cs); } while(0)
+#define UNLOCK_SERVER_LIST() LeaveCriticalSection(&server_list_cs)
+#endif
 
-// Helper: add/remove/list servers
+// Helper: add/remove/list servers (thread-safe)
 static int add_server(go_server_t* srv) {
+    LOCK_SERVER_LIST();
     for (int i = 0; i < MAX_SERVERS; ++i) {
         if (server_list[i] == NULL) {
             server_list[i] = srv;
             server_count++;
+            UNLOCK_SERVER_LIST();
             return i;
         }
     }
+    UNLOCK_SERVER_LIST();
     return -1;
 }
+
 static void remove_server(go_server_t* srv) {
+    LOCK_SERVER_LIST();
     for (int i = 0; i < MAX_SERVERS; ++i) {
         if (server_list[i] == srv) {
             server_list[i] = NULL;
             server_count--;
+            UNLOCK_SERVER_LIST();
             return;
         }
     }
+    UNLOCK_SERVER_LIST();
 }
 
 // Thread entry for background server
 static void* server_thread_fn(void* arg) {
     go_server_t* srv = (go_server_t*)arg;
     RunServerWithShutdown(srv->dir, srv->addr, srv->prefix, srv->cors, srv->coop, srv->tls, srv->silent, srv->certfile, srv->keyfile, srv->shutdown_pipe[0]);
+    
+    // Safely update running status
+    LOCK_SERVER_LIST();
     srv->running = 0;
+    UNLOCK_SERVER_LIST();
+    
     return NULL;
 }
 
@@ -156,11 +178,24 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
 }
 
 SEXP list_servers() {
-    SEXP res = PROTECT(allocVector(VECSXP, server_count));
-    int k = 0;
+    LOCK_SERVER_LIST();
+    
+    // First pass: count active servers
+    int active_count = 0;
     for (int i = 0; i < MAX_SERVERS; ++i) {
         go_server_t* srv = server_list[i];
         if (srv && srv->running) {
+            active_count++;
+        }
+    }
+    
+    SEXP res = PROTECT(allocVector(VECSXP, active_count));
+    int k = 0;
+    
+    // Second pass: collect server info
+    for (int i = 0; i < MAX_SERVERS; ++i) {
+        go_server_t* srv = server_list[i];
+        if (srv && srv->running && k < active_count) {
             SEXP info = PROTECT(allocVector(STRSXP, 3));
             SET_STRING_ELT(info, 0, mkChar(srv->dir));
             SET_STRING_ELT(info, 1, mkChar(srv->addr));
@@ -169,6 +204,8 @@ SEXP list_servers() {
             UNPROTECT(1);
         }
     }
+    
+    UNLOCK_SERVER_LIST();
     UNPROTECT(1);
     return res;
 }
