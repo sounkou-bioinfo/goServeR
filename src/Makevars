@@ -13,6 +13,7 @@ $(SHLIB): $(OBJECTS)
 # First build the Go archive to generate serve.h
 serve.a: $(GO_SRCS)
 	echo $(GO) && \
+	GO_CFLAGS="-I$(SRCDIR)" \
 	$(GO) build -o $@ -buildmode=c-archive $(GOSRC_DIR)/serve.go
 
 clean:
