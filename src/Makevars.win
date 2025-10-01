@@ -8,11 +8,7 @@ GOSRC_DIR = $(SRCDIR)/go
 GO_SRCS = $(wildcard $(GOSRC_DIR)/*.go)
 C_SRCS = init.c Rserve.c interupt.c
 C_OBJS = $(patsubst %.c,%.o,$(C_SRCS))
-OBJECTS = $(C_OBJS) serve.a
-
-# Define variables for R's configuration
-R_INC = $(shell ${R_HOME}/bin/R CMD config --cppflags)
-R_LDFLAGS = $(shell ${R_HOME}/bin/R CMD config --ldflags)
+OBJECTS = serve.a
 
 $(SHLIB): $(OBJECTS)
 
@@ -22,10 +18,6 @@ serve.a: $(GO_SRCS)
 	CGO_CFLAGS="$(R_INC) -I$(SRCDIR)" \
 	CGO_LDFLAGS="$(R_LDFLAGS)" \
 	$(GO) build -buildmode=c-archive -o $@ $(GOSRC_DIR)/serve.go
-
-# Then compile the C files to object files after serve.h is available
-$(C_OBJS): %.o: %.c serve.a
-	$(CC) $(R_INC) $(CPPFLAGS) $(CFLAGS) $(PKG_CFLAGS) -c $< -o $@
 
 clean:
 	rm -f $(SRCDIR)/*.o $(SRCDIR)/serve.h $(SRCDIR)/*.a $(SRCDIR)/symbols.rds $(SRCDIR)/*.so
