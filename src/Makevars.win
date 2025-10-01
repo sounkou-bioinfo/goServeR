@@ -1,7 +1,7 @@
 PKG_CFLAGS = -I$(CURDIR)
 # Use -DWIN32 for conditional compilation in C code
 PKG_CPPFLAGS = -DWIN32 -D_WIN32
-PKG_LIBS = -L$(CURDIR) $(CURDIR)/serve.a -lws2_32 -lwinmm
+PKG_LIBS = -L$(CURDIR) $(CURDIR)/serve.a -lws2_32 -lwinmm $(CURDIR)/goserveR.def
 SRCDIR = $(CURDIR)
 GO = $(shell which go)
 GOSRC_DIR = $(SRCDIR)/go
@@ -10,8 +10,7 @@ C_SRCS = init.c Rserve.c interupt.c
 C_OBJS = $(patsubst %.c,%.o,$(C_SRCS))
 OBJECTS = serve.a $(C_OBJS)
 
-$(SHLIB): $(OBJECTS) goserveR.def
-	$(SHLIB_LINK) -o $@ goserveR.def $(OBJECTS) $(ALL_LIBS)
+$(SHLIB): $(OBJECTS)
 
 # First build the Go archive to generate serve.h
 serve.a: $(GO_SRCS)
