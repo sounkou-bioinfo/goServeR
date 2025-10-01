@@ -47,7 +47,7 @@ func RunServerWithShutdown(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, 
 		addr = "0.0.0.0:8080"
 	}
 	if prefix == "" {
-		prefix = ""
+		prefix = absDir
 	}
 
 	serveLog := log.New(os.Stdout, "", log.LstdFlags|log.Lmicroseconds)
