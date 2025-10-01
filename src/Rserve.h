@@ -19,8 +19,8 @@
 
 // Go function, this is also available in serve.h
 // The declaration should match the one in serve.h
-extern void RunServer(char* dir, char* addr, char* prefix);
-extern void RunServerWithShutdown(char* dir, char* addr, char* prefix, int cors, int coop, int tls, int silent, char* certfile, char* keyfile, int shutdown_fd);
+void RunServer(char* dir, char* addr, char* prefix);
+void RunServerWithShutdown(char* dir, char* addr, char* prefix, int cors, int coop, int tls, int silent, char* certfile, char* keyfile, int shutdown_fd);
 
 // Struct to hold server state for background servers
 typedef struct {
