@@ -74,6 +74,41 @@ readLines(paste0("http://0.0.0.0:8080/", currentDir))
 shutdownServer(h)
 ```
 
+### Multiple Servers
+
+You can run multiple servers simultaneously on different ports:
+
+```{r multiple}
+# Start multiple servers
+h1 <- runServer(dir = ".", addr = "127.0.0.1:8081", blocking = FALSE, silent = TRUE)
+h2 <- runServer(dir = ".", addr = "127.0.0.1:8082", blocking = FALSE, silent = TRUE)
+h3 <- runServer(dir = ".", addr = "127.0.0.1:8083", blocking = FALSE, silent = TRUE)
+
+# List all running servers
+servers <- listServers()
+
+for(i in seq_along(servers)) {
+  sprintf("  Server %d: %s on %s\n", i, servers[[i]][1], servers[[i]][2]) |> cat()
+}
+
+# Access different servers
+
+#Server 1 (port 8081) 
+length(readLines(paste0("http://127.0.0.1:8081/", normalizePath("."))))
+#Server 2 (port 8082)
+length(readLines(paste0("http://127.0.0.1:8082/", normalizePath("."))))
+#Server 3 (port 8083)
+length(readLines(paste0("http://127.0.0.1:8083/", normalizePath("."))))
+
+# Shutdown all servers
+shutdownServer(h1)
+shutdownServer(h2)
+shutdownServer(h3)
+
+# Verify cleanup
+length(listServers())
+```
+
 ## How it works ?
 We wrote a standard Go HTTP file server, created a static library from it, and then wrote the usual R C API wrappers for the cgo (static) library. Interrupts are now handled entirely at the C level: the Go server runs in a background thread, and the main C thread periodically checks for user interrupts using the R API. If an interrupt is detected, the C code signals the Go server to shut down. This approach is robust, portable, and keeps all R session control in C, not Go.
 

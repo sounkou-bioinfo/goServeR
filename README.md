@@ -93,15 +93,56 @@ readLines(paste0("http://0.0.0.0:8080/", currentDir))
 #> [15] "<a href=\"README.html\">README.html</a>"                                    
 #> [16] "<a href=\"README.md\">README.md</a>"                                        
 #> [17] "<a href=\"Rserve.c\">Rserve.c</a>"                                          
-#> [18] "<a href=\"goserveR.Rcheck/\">goserveR.Rcheck/</a>"                          
-#> [19] "<a href=\"goserveR_0.1.2-0.90000.tar.gz\">goserveR_0.1.2-0.90000.tar.gz</a>"
-#> [20] "<a href=\"inst/\">inst/</a>"                                                
-#> [21] "<a href=\"man/\">man/</a>"                                                  
-#> [22] "<a href=\"precommit.sh\">precommit.sh</a>"                                  
-#> [23] "<a href=\"src/\">src/</a>"                                                  
-#> [24] "<a href=\"tools/\">tools/</a>"                                              
-#> [25] "</pre>"
+#> [18] "<a href=\"goserveR_0.1.2-0.90000.tar.gz\">goserveR_0.1.2-0.90000.tar.gz</a>"
+#> [19] "<a href=\"inst/\">inst/</a>"                                                
+#> [20] "<a href=\"man/\">man/</a>"                                                  
+#> [21] "<a href=\"precommit.sh\">precommit.sh</a>"                                  
+#> [22] "<a href=\"src/\">src/</a>"                                                  
+#> [23] "<a href=\"tools/\">tools/</a>"                                              
+#> [24] "</pre>"
 shutdownServer(h)
+```
+
+### Multiple Servers
+
+You can run multiple servers simultaneously on different ports:
+
+``` r
+# Start multiple servers
+h1 <- runServer(dir = ".", addr = "127.0.0.1:8081", blocking = FALSE, silent = TRUE)
+h2 <- runServer(dir = ".", addr = "127.0.0.1:8082", blocking = FALSE, silent = TRUE)
+h3 <- runServer(dir = ".", addr = "127.0.0.1:8083", blocking = FALSE, silent = TRUE)
+
+# List all running servers
+servers <- listServers()
+
+for(i in seq_along(servers)) {
+  sprintf("  Server %d: %s on %s\n", i, servers[[i]][1], servers[[i]][2]) |> cat()
+}
+#>   Server 1: . on 127.0.0.1:8081
+#>   Server 2: . on 127.0.0.1:8082
+#>   Server 3: . on 127.0.0.1:8083
+
+# Access different servers
+
+#Server 1 (port 8081) 
+length(readLines(paste0("http://127.0.0.1:8081/", normalizePath("."))))
+#> [1] 24
+#Server 2 (port 8082)
+length(readLines(paste0("http://127.0.0.1:8082/", normalizePath("."))))
+#> [1] 24
+#Server 3 (port 8083)
+length(readLines(paste0("http://127.0.0.1:8083/", normalizePath("."))))
+#> [1] 24
+
+# Shutdown all servers
+shutdownServer(h1)
+shutdownServer(h2)
+shutdownServer(h3)
+
+# Verify cleanup
+length(listServers())
+#> [1] 0
 ```
 
 ## How it works ?
