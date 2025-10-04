@@ -61,14 +61,14 @@ library(goserveR)
 # set timeout to 5 seconds for demo purpose
 # this will stop the server after 5 seconds
 setTimeLimit(elapsed = 5, transient = TRUE)
-runServer(dir = ".", addr = "0.0.0.0:8080")
+runServer(dir = ".", addr = "0.0.0.0:8080", silent = TRUE)
 setTimeLimit()
 ```
 
 To start a background server and get a handle
 
 ```{r background}
-h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE)
+h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE, silent = TRUE)
 listServers() |> str()
 currentDir <- normalizePath(".")
 readLines(paste0("http://0.0.0.0:8080/", currentDir)) |>
@@ -194,6 +194,15 @@ if (file.exists(logfile)) {
 }
 ```
 
+## On background log handlers
+
+An important note is that the handler may run at unpredictable times, and are removed when the server is shutdown, so there is no guarantee that they may run when go write to the log pipe.
+
+
+## How it works ?
+
+We wrote a standard Go HTTP file server, created a static library from it, and then wrote the usual R C API wrappers for the cgo (static) library. Interrupts are now handled entirely at the C level: the Go server runs in a background thread, and the main C thread periodically checks for user interrupts using the R API. If an interrupt is detected, the C code signals the Go server to shut down. This approach is robust, portable, and keeps all R session control in C, not Go. Morover logging is now handled asynchronously using asynchronous input handlers as adapted from Simon Urbanek's [async callback pattern](https://github.com/s-u/background).
+
 ## On TLS Certificates
 **Note**: The included certificate files are for testing purposes only and should not be used in production. For development with browser-trusted certificates, use `mkcert` to generate locally-trusted certificates:
 
@@ -222,10 +231,6 @@ sudo certbot --nginx -d yourdomain.com
 openssl genpkey -algorithm RSA -out server.key -pkcs8
 openssl req -new -x509 -key server.key -out server.crt -days 365
 ```
-
-## How it works ?
-
-We wrote a standard Go HTTP file server, created a static library from it, and then wrote the usual R C API wrappers for the cgo (static) library. Interrupts are now handled entirely at the C level: the Go server runs in a background thread, and the main C thread periodically checks for user interrupts using the R API. If an interrupt is detected, the C code signals the Go server to shut down. This approach is robust, portable, and keeps all R session control in C, not Go. Morover logging is now handled asynchronously using asynchronous input handlers as adapted from Simon Urbanek's [async callback pattern](https://github.com/s-u/background).
 
 ## TODO
 

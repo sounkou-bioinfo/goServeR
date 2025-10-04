@@ -65,7 +65,7 @@ library(goserveR)
 # set timeout to 5 seconds for demo purpose
 # this will stop the server after 5 seconds
 setTimeLimit(elapsed = 5, transient = TRUE)
-runServer(dir = ".", addr = "0.0.0.0:8080")
+runServer(dir = ".", addr = "0.0.0.0:8080", silent = TRUE)
 #> Server started in blocking mode. Press Ctrl+C to interrupt.
 setTimeLimit()
 ```
@@ -73,7 +73,7 @@ setTimeLimit()
 To start a background server and get a handle
 
 ``` r
-h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE)
+h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE, silent = TRUE)
 listServers() |> str()
 #> List of 1
 #>  $ :List of 8
@@ -81,10 +81,10 @@ listServers() |> str()
 #>   ..$ address        : chr "0.0.0.0:8080"
 #>   ..$ prefix         : chr ""
 #>   ..$ protocol       : chr "HTTP"
-#>   ..$ logging        : chr "logging"
-#>   ..$ log_handler    : chr "default"
-#>   ..$ log_destination: chr "console"
-#>   ..$ log_function   : chr ".default_log_callback"
+#>   ..$ logging        : chr "silent"
+#>   ..$ log_handler    : chr "none"
+#>   ..$ log_destination: chr "none"
+#>   ..$ log_function   : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
 #>  - attr(*, "class")= chr "server_list"
 currentDir <- normalizePath(".")
@@ -311,13 +311,10 @@ listServers() |> str()
 
 # let's get the log by making R idle !
 Sys.sleep(5)
-#> [goserveR] 2025/10/04 23:36:01.074693 Serving directory "." on http://0.0.0.0:8080
-#> 2025/10/04 23:36:01.115339 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:47480 156.733µs
-#> 2025/10/04 23:36:01.117331 Shutdown signal received—shutting down HTTP server at 0.0.0.0:8080 (prefix: /home/sounkoutoure/Projects/goServeR)
-#> [goserveR] 2025/10/04 23:36:01.261141 Serving directory "." on http://127.0.0.1:8350
+#> [goserveR] 2025/10/04 23:48:59.627613 Serving directory "." on http://127.0.0.1:8350
 #> 
-#> *** [CUSTOM-SERVER] *** 2025/10/04 23:36:01.270200 Serving directory "." on http://127.0.0.1:8352
-#> 2025/10/04 23:36:01.271856 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:34754 332.701µs
+#> *** [CUSTOM-SERVER] *** 2025/10/04 23:48:59.636735 Serving directory "." on http://127.0.0.1:8352
+#> 2025/10/04 23:48:59.638268 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:41870 233.106µs
 #>  *** END ***
 shutdownServer(h1)
 shutdownServer(h2)
@@ -329,10 +326,29 @@ shutdownServer(h4)
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")
 }
-#> [2025-10-04 23:36:01] 2025/10/04 23:36:01.265168 Serving directory "." on http://127.0.0.1:8351
-#> 2025/10/04 23:36:01.266759 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:45266 191.677µs
+#> [2025-10-04 23:48:59] 2025/10/04 23:48:59.631345 Serving directory "." on http://127.0.0.1:8351
+#> 2025/10/04 23:48:59.633050 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:38868 195.857µs
 #> 
 ```
+
+## On background log handlers
+
+An important note is that the handler may run at unpredictable times,
+and are removed when the server is shutdown, so there is no guarantee
+that they may run when go write to the log pipe.
+
+## How it works ?
+
+We wrote a standard Go HTTP file server, created a static library from
+it, and then wrote the usual R C API wrappers for the cgo (static)
+library. Interrupts are now handled entirely at the C level: the Go
+server runs in a background thread, and the main C thread periodically
+checks for user interrupts using the R API. If an interrupt is detected,
+the C code signals the Go server to shut down. This approach is robust,
+portable, and keeps all R session control in C, not Go. Morover logging
+is now handled asynchronously using asynchronous input handlers as
+adapted from Simon Urbanek’s [async callback
+pattern](https://github.com/s-u/background).
 
 ## On TLS Certificates
 
@@ -367,19 +383,6 @@ sudo certbot --nginx -d yourdomain.com
 openssl genpkey -algorithm RSA -out server.key -pkcs8
 openssl req -new -x509 -key server.key -out server.crt -days 365
 ```
-
-## How it works ?
-
-We wrote a standard Go HTTP file server, created a static library from
-it, and then wrote the usual R C API wrappers for the cgo (static)
-library. Interrupts are now handled entirely at the C level: the Go
-server runs in a background thread, and the main C thread periodically
-checks for user interrupts using the R API. If an interrupt is detected,
-the C code signals the Go server to shut down. This approach is robust,
-portable, and keeps all R session control in C, not Go. Morover logging
-is now handled asynchronously using asynchronous input handlers as
-adapted from Simon Urbanek’s [async callback
-pattern](https://github.com/s-u/background).
 
 ## TODO
 
