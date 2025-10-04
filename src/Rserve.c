@@ -186,6 +186,9 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
             error("Failed to start server thread");
         }
         Rprintf("Server started in blocking mode. Press Ctrl+C to interrupt.\n");
+        Rprintf("Server address: %s\n", srv->addr);
+        Rprintf("Static files directory: %s\n", srv->dir);
+        Rprintf("URL prefix: %s\n", srv->prefix);
         add_server(srv);
         while (srv->running) {
             if (pending_interrupt()) {
