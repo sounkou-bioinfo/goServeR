@@ -267,7 +267,7 @@ SEXP remove_log_handler(SEXP h_ptr) {
     bg_log_handler_t *h;
     if (TYPEOF(h_ptr) != EXTPTRSXP || !inherits(h_ptr, "LogHandler"))
         Rf_error("invalid log handler");
-    h = (bg_log_handler_t*) EXTPTR_PTR(h_ptr);
+    h = (bg_log_handler_t*) R_ExternalPtrAddr(h_ptr);
     if (!h) return ScalarLogical(0);
     
     finalize_log_handler(h);
@@ -278,7 +278,7 @@ SEXP remove_log_handler(SEXP h_ptr) {
 
 /* Finalizer for log handlers */
 void log_handler_finalizer(SEXP h_ptr) {
-    bg_log_handler_t *h = (bg_log_handler_t*) EXTPTR_PTR(h_ptr);
+    bg_log_handler_t *h = (bg_log_handler_t*) R_ExternalPtrAddr(h_ptr);
     if (!h) return;
     finalize_log_handler(h);
     free(h);
