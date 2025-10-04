@@ -15,7 +15,6 @@ import "C"
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -157,38 +156,4 @@ func enableCOOP(next http.Handler) http.Handler {
 }
 
 // Only run main when building as a standalone binary, not as a shared library for R
-func main() {
-	fmt.Println("Standalone mode: no-op main. This is required for c-archive builds but does nothing.")
-}
-
-//export TestShutdownSimulation
-func TestShutdownSimulation() {
-	// Create a pipe to simulate the shutdown mechanism
-	r, w, err := os.Pipe()
-	if err != nil {
-		fmt.Printf("Failed to create pipe: %v\n", err)
-		return
-	}
-	defer r.Close()
-	defer w.Close()
-
-	fmt.Println("Testing shutdown simulation...")
-
-	// Start a minimal server simulation
-	go func() {
-		fmt.Println("Simulated server started, waiting for shutdown signal...")
-		buf := make([]byte, 1)
-		shutdownFile := r
-		_, _ = shutdownFile.Read(buf) // blocks until shutdown
-		fmt.Println("Shutdown signal received in Go!")
-	}()
-
-	// Wait 2 seconds, then signal shutdown
-	time.Sleep(2 * time.Second)
-	fmt.Println("Sending shutdown signal from test...")
-	w.Write([]byte("x"))
-
-	// Give it time to process
-	time.Sleep(500 * time.Millisecond)
-	fmt.Println("Test shutdown simulation complete")
-}
+func main() {}
