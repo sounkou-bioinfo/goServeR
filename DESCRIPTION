@@ -9,7 +9,7 @@ Authors@R: c(
 Description: goserveR provides a lightweight HTTP(S) file server implemented in Go and exposed to R. It supports range
  requests, configurable CORS and COOP headers, and optional TLS. The package builds and runs a background server
  that can be cleanly shut down from R using an OS pipe and C/Go interop. Asynchronous log handling is also supported.
-License: GPL (>= 3)
+License: GPL (>= 2)
 SystemRequirements: Go (https://golang.org), GNU make
 RoxygenNote: 7.3.2
 Encoding: UTF-8
