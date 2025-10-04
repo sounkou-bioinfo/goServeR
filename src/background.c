@@ -27,6 +27,7 @@
 #include <pthread.h>
 #else
 #include <windows.h>
+#include <io.h>  /* for _read, _write, _close */
 #endif
 
 static int in_process;
@@ -60,7 +61,7 @@ static int log_handler_cs_init = 0;
 #ifdef WIN32
 #define WM_LOG_CALLBACK ( WM_USER + 1 )
 static HWND message_window;
-static LRESULT CALLBACK LogWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+static LRESULT CALLBACK BackgroundWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 #ifndef HWND_MESSAGE
 #define HWND_MESSAGE ((HWND)-3)
 #endif
@@ -73,7 +74,7 @@ static void first_init()
 #ifdef WIN32
     HINSTANCE instance = GetModuleHandle(NULL);
     LPCTSTR class = "goserveR_log";
-    WNDCLASS wndclass = { 0, LogWindowProc, 0, 0, instance, NULL, 0, 0, NULL, class };
+    WNDCLASS wndclass = { 0, BackgroundWindowProc, 0, 0, instance, NULL, 0, 0, NULL, class };
     RegisterClass(&wndclass);
     message_window = CreateWindow(class, "goserveR_log", 0, 1, 1, 1, 1,
                                   HWND_MESSAGE, NULL, instance, NULL);
@@ -88,6 +89,16 @@ static void finalize_log_handler(bg_log_handler_t *h)
         // Remove from input handlers list first to prevent further callbacks
         removeInputHandler(&R_InputHandlers, h->ih);
         h->ih = NULL;
+    }
+#else
+    // Clean up Windows thread if needed
+    if (h->thread) {
+        DWORD ts = 0;
+        if (GetExitCodeThread(h->thread, &ts) && ts == STILL_ACTIVE) {
+            TerminateThread(h->thread, 0);
+        }
+        CloseHandle(h->thread);
+        h->thread = NULL;
     }
 #endif
     
@@ -144,10 +155,12 @@ static void run_log_callback_(void *ptr)
     // Check for read errors or closed pipe
     if (bytes_read <= 0) {
         // Pipe was closed or error occurred - remove this handler
+#ifndef WIN32
         if (h->ih) {
             removeInputHandler(&R_InputHandlers, h->ih);
             h->ih = NULL;
         }
+#endif
         return;
     }
     
@@ -184,7 +197,7 @@ static void run_log_callback(bg_log_handler_t *h)
 static void log_input_handler(void *data);
 
 #ifdef WIN32
-static LRESULT CALLBACK LogWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK BackgroundWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     if (hwnd == message_window && uMsg == WM_LOG_CALLBACK) {
         bg_log_handler_t *h = (bg_log_handler_t*) lParam;
