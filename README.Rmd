@@ -179,7 +179,7 @@ bunk <- readLines(paste0("http://127.0.0.1:8352/", normalizePath(".")))
 h4 <- runServer(dir = ".", addr = "127.0.0.1:8353", blocking = FALSE, silent = TRUE)
 
 listServers() |> str()
-# Cleanup
+
 # let's get the log by making R idle !
 Sys.sleep(5)
 shutdownServer(h1)

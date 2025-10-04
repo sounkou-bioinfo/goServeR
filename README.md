@@ -308,16 +308,16 @@ listServers() |> str()
 #>   ..$ log_function   : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
 #>  - attr(*, "class")= chr "server_list"
-# Cleanup
+
 # let's get the log by making R idle !
 Sys.sleep(5)
-#> [goserveR] 2025/10/04 23:30:29.795782 Serving directory "." on http://0.0.0.0:8080
-#> 2025/10/04 23:30:29.822849 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:60426 169.434µs
-#> 2025/10/04 23:30:29.825256 Shutdown signal received—shutting down HTTP server at 0.0.0.0:8080 (prefix: /home/sounkoutoure/Projects/goServeR)
-#> [goserveR] 2025/10/04 23:30:29.959794 Serving directory "." on http://127.0.0.1:8350
+#> [goserveR] 2025/10/04 23:36:01.074693 Serving directory "." on http://0.0.0.0:8080
+#> 2025/10/04 23:36:01.115339 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:47480 156.733µs
+#> 2025/10/04 23:36:01.117331 Shutdown signal received—shutting down HTTP server at 0.0.0.0:8080 (prefix: /home/sounkoutoure/Projects/goServeR)
+#> [goserveR] 2025/10/04 23:36:01.261141 Serving directory "." on http://127.0.0.1:8350
 #> 
-#> *** [CUSTOM-SERVER] *** 2025/10/04 23:30:29.967138 Serving directory "." on http://127.0.0.1:8352
-#> 2025/10/04 23:30:29.969408 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:52072 241.628µs
+#> *** [CUSTOM-SERVER] *** 2025/10/04 23:36:01.270200 Serving directory "." on http://127.0.0.1:8352
+#> 2025/10/04 23:36:01.271856 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:34754 332.701µs
 #>  *** END ***
 shutdownServer(h1)
 shutdownServer(h2)
@@ -329,8 +329,8 @@ shutdownServer(h4)
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")
 }
-#> [2025-10-04 23:30:29] 2025/10/04 23:30:29.961978 Serving directory "." on http://127.0.0.1:8351
-#> 2025/10/04 23:30:29.963668 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:60710 247.71µs
+#> [2025-10-04 23:36:01] 2025/10/04 23:36:01.265168 Serving directory "." on http://127.0.0.1:8351
+#> 2025/10/04 23:36:01.266759 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:45266 191.677µs
 #> 
 ```
 
