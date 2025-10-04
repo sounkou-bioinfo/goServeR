@@ -210,8 +210,7 @@ removeLogHandler <- function(handler) {
 #' @param message log message
 #' @param user user data (unused)
 .default_log_callback <- function(handler, message, user) {
-    cat("[goserveR]", message)
-    flush.console()
+    message("[goserveR]", message)
 }
 
 #' Create file log handler
