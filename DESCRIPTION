@@ -1,18 +1,15 @@
 Package: goserveR
 Type: Package
-Title: HTTP(s) File Server with Range Requests and Unbounded CORS using Go
+Title: HTTP(S) File Server with Range Requests and Unbounded CORS using Go
 Version: 0.1.2-0.90000
 Author: Sounkou Mahammane Toure
 Maintainer: Sounkou Mahammane Toure <sounkoutoure@gmail.com>
 Description: An R package that integrates with Go for serving web content. 
-    Implements functionality based on the guide at 
-    <https://purrple.cat/blog/2017/05/14/calling-go-from-r/>.
-    Server implementation inspired by Eli Bendersky <https://eli.thegreenplace.net>.
-License: GPL (>= 2)
+    Implements functionality based on the guide at  <https://purrple.cat/blog/2017/05/14/calling-go-from-r/>.
+    Server implementation inspired by Eli Bendersky's server-http <https://github.com/eliben/static-server>
+License: GPL (>= 3)
 SystemRequirements: Go (https://golang.org), GNU make
 RoxygenNote: 7.3.2
 Encoding: UTF-8
 Suggests:
-    tinytest,
-    httr,
-    sys
+    tinytest

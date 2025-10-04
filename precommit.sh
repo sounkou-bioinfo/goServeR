@@ -6,4 +6,6 @@ Rscript -e 'roxygen2::roxygenise()'
 #echo "------------R CMD Check"
 #R CMD check --no-vignettes --no-manuals
 R CMD check --as-cran .
-git commit -am "document"
+R CMD INSTALL .
+R -e 'tinytest::test_package(testdir="./inst/tinytest")'
+#git commit -am "document"
