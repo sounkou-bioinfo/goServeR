@@ -165,7 +165,7 @@ file_logger <- function(handler, message, user) {
 }
 h2 <- runServer(dir = ".", addr = "127.0.0.1:8351", blocking = FALSE, 
                 silent = FALSE, log_handler = file_logger)
-
+readLines(paste0("http://127.0.0.1:8351/", normalizePath(".")))
 # Custom console logger with prefix
 console_logger <- function(handler, message, user) {
   cat("[CUSTOM-SERVER]", message)
@@ -173,7 +173,7 @@ console_logger <- function(handler, message, user) {
 }
 h3 <- runServer(dir = ".", addr = "127.0.0.1:8352", blocking = FALSE, 
                 silent = FALSE, log_handler = console_logger)
-
+readLines(paste0("http://127.0.0.1:8352/", normalizePath(".")))
 # Silent mode (no logs)
 h4 <- runServer(dir = ".", addr = "127.0.0.1:8353", blocking = FALSE, silent = TRUE)
 
