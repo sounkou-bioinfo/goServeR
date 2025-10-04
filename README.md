@@ -311,10 +311,10 @@ listServers() |> str()
 
 # let's get the log by making R idle !
 Sys.sleep(5)
-#> [goserveR] 2025/10/04 23:48:59.627613 Serving directory "." on http://127.0.0.1:8350
+#> [goserveR] 2025/10/05 00:05:02.336204 Serving directory "." on http://127.0.0.1:8350
 #> 
-#> *** [CUSTOM-SERVER] *** 2025/10/04 23:48:59.636735 Serving directory "." on http://127.0.0.1:8352
-#> 2025/10/04 23:48:59.638268 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:41870 233.106µs
+#> *** [CUSTOM-SERVER] *** 2025/10/05 00:05:02.342104 Serving directory "." on http://127.0.0.1:8352
+#> 2025/10/05 00:05:02.343257 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:55940 154.424µs
 #>  *** END ***
 shutdownServer(h1)
 shutdownServer(h2)
@@ -326,8 +326,8 @@ shutdownServer(h4)
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")
 }
-#> [2025-10-04 23:48:59] 2025/10/04 23:48:59.631345 Serving directory "." on http://127.0.0.1:8351
-#> 2025/10/04 23:48:59.633050 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:38868 195.857µs
+#> [2025-10-05 00:05:02] 2025/10/05 00:05:02.338831 Serving directory "." on http://127.0.0.1:8351
+#> 2025/10/05 00:05:02.340110 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:37276 174.422µs
 #> 
 ```
 
