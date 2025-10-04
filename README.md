@@ -81,15 +81,15 @@ currentDir <- normalizePath(".")
 readLines(paste0("http://0.0.0.0:8080/", currentDir)) |>
   head(10)
 #>  [1] "<pre>"                                                          
-#>  [2] "<a href=\".Rbuildignore\">.Rbuildignore</a>"                    
-#>  [3] "<a href=\".Rinstignore\">.Rinstignore</a>"                      
-#>  [4] "<a href=\".git/\">.git/</a>"                                    
-#>  [5] "<a href=\".github/\">.github/</a>"                              
-#>  [6] "<a href=\".gitignore\">.gitignore</a>"                          
-#>  [7] "<a href=\".lintr\">.lintr</a>"                                  
-#>  [8] "<a href=\".pre-commit-config.yaml\">.pre-commit-config.yaml</a>"
-#>  [9] "<a href=\".vscode/\">.vscode/</a>"                              
-#> [10] "<a href=\"DESCRIPTION\">DESCRIPTION</a>"
+#>  [2] "<a href=\"..Rcheck/\">..Rcheck/</a>"                            
+#>  [3] "<a href=\".Rbuildignore\">.Rbuildignore</a>"                    
+#>  [4] "<a href=\".Rinstignore\">.Rinstignore</a>"                      
+#>  [5] "<a href=\".git/\">.git/</a>"                                    
+#>  [6] "<a href=\".github/\">.github/</a>"                              
+#>  [7] "<a href=\".gitignore\">.gitignore</a>"                          
+#>  [8] "<a href=\".lintr\">.lintr</a>"                                  
+#>  [9] "<a href=\".pre-commit-config.yaml\">.pre-commit-config.yaml</a>"
+#> [10] "<a href=\".vscode/\">.vscode/</a>"
 shutdownServer(h)
 ```
 
@@ -117,13 +117,13 @@ for(i in seq_along(servers)) {
 
 #Server 1 (port 8081) 
 length(readLines(paste0("http://127.0.0.1:8081/", normalizePath("."))))
-#> [1] 24
+#> [1] 26
 #Server 2 (port 8082)
 length(readLines(paste0("http://127.0.0.1:8082/", normalizePath("."))))
-#> [1] 24
+#> [1] 26
 #Server 3 (port 8083)
 length(readLines(paste0("http://127.0.0.1:8083/", normalizePath("."))))
-#> [1] 24
+#> [1] 26
 
 # Shutdown all servers
 shutdownServer(h1)
@@ -178,10 +178,10 @@ if (Sys.which("curl") != "") {
 }
 #> HTTPS server response (first 5 lines):
 #> <pre>
+#> <a href="..Rcheck/">..Rcheck/</a>
 #> <a href=".Rbuildignore">.Rbuildignore</a>
 #> <a href=".Rinstignore">.Rinstignore</a>
 #> <a href=".git/">.git/</a>
-#> <a href=".github/">.github/</a>
 
 # Shutdown the TLS server
 shutdownServer(h_tls)
