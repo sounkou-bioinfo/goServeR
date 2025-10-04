@@ -15,6 +15,7 @@ runServer(
   certfile = "cert.pem",
   keyfile = "key.pem",
   silent = FALSE,
+  log_handler = NULL,
   ...
 )
 }
@@ -39,6 +40,8 @@ runServer(
 
 \item{silent}{logical, suppress server logs}
 
+\item{log_handler}{function, custom log handler function(handler, message, user)}
+
 \item{...}{additional arguments passed to the server}
 }
 \value{
@@ -55,11 +58,20 @@ Run the go http server (blocking or background)
 # Start a background server (returns a handle)
 h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE)
 
-# Start a server with CORS and COOP enabled
-h <- runServer(cors = TRUE, coop = TRUE, blocking = FALSE)
+# Start a server with custom log handler
+logfile <- tempfile("server_", fileext = ".log")
+h <- runServer(
+    dir = ".", addr = "0.0.0.0:8080", blocking = FALSE,
+    log_handler = function(handler, message, user) {
+        cat("[CUSTOM]", message, file = logfile, append = TRUE)
+    }
+)
 
 # List all running background servers
 listServers()
+
+# Get a summary view  
+summary(listServers())
 
 # Shutdown a background server
 shutdownServer(h)

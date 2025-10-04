@@ -74,9 +74,19 @@ To start a background server and get a handle
 
 ``` r
 h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE)
-listServers()
-#> [[1]]
-#> [1] "."            "0.0.0.0:8080" ""
+listServers() |> str()
+#> List of 1
+#>  $ :List of 8
+#>   ..$ directory      : chr "."
+#>   ..$ address        : chr "0.0.0.0:8080"
+#>   ..$ prefix         : chr ""
+#>   ..$ protocol       : chr "HTTP"
+#>   ..$ logging        : chr "logging"
+#>   ..$ log_handler    : chr "default"
+#>   ..$ log_destination: chr "console"
+#>   ..$ log_function   : chr ".default_log_callback"
+#>   ..- attr(*, "class")= chr "server_info"
+#>  - attr(*, "class")= chr "server_list"
 currentDir <- normalizePath(".")
 readLines(paste0("http://0.0.0.0:8080/", currentDir)) |>
   head(10)
@@ -104,26 +114,51 @@ h2 <- runServer(dir = ".", addr = "127.0.0.1:8082", blocking = FALSE, silent = T
 h3 <- runServer(dir = ".", addr = "127.0.0.1:8083", blocking = FALSE, silent = TRUE)
 
 # List all running servers
-servers <- listServers()
-
-for(i in seq_along(servers)) {
-  sprintf("  Server %d: %s on %s\n", i, servers[[i]][1], servers[[i]][2]) |> cat()
-}
-#>   Server 1: . on 127.0.0.1:8081
-#>   Server 2: . on 127.0.0.1:8082
-#>   Server 3: . on 127.0.0.1:8083
+listServers() |> str()
+#> List of 3
+#>  $ :List of 8
+#>   ..$ directory      : chr "."
+#>   ..$ address        : chr "127.0.0.1:8081"
+#>   ..$ prefix         : chr ""
+#>   ..$ protocol       : chr "HTTP"
+#>   ..$ logging        : chr "silent"
+#>   ..$ log_handler    : chr "none"
+#>   ..$ log_destination: chr "none"
+#>   ..$ log_function   : chr "none"
+#>   ..- attr(*, "class")= chr "server_info"
+#>  $ :List of 8
+#>   ..$ directory      : chr "."
+#>   ..$ address        : chr "127.0.0.1:8082"
+#>   ..$ prefix         : chr ""
+#>   ..$ protocol       : chr "HTTP"
+#>   ..$ logging        : chr "silent"
+#>   ..$ log_handler    : chr "none"
+#>   ..$ log_destination: chr "none"
+#>   ..$ log_function   : chr "none"
+#>   ..- attr(*, "class")= chr "server_info"
+#>  $ :List of 8
+#>   ..$ directory      : chr "."
+#>   ..$ address        : chr "127.0.0.1:8083"
+#>   ..$ prefix         : chr ""
+#>   ..$ protocol       : chr "HTTP"
+#>   ..$ logging        : chr "silent"
+#>   ..$ log_handler    : chr "none"
+#>   ..$ log_destination: chr "none"
+#>   ..$ log_function   : chr "none"
+#>   ..- attr(*, "class")= chr "server_info"
+#>  - attr(*, "class")= chr "server_list"
 
 # Access different servers
 
 #Server 1 (port 8081) 
 length(readLines(paste0("http://127.0.0.1:8081/", normalizePath("."))))
-#> [1] 26
+#> [1] 25
 #Server 2 (port 8082)
 length(readLines(paste0("http://127.0.0.1:8082/", normalizePath("."))))
-#> [1] 26
+#> [1] 25
 #Server 3 (port 8083)
 length(readLines(paste0("http://127.0.0.1:8083/", normalizePath("."))))
-#> [1] 26
+#> [1] 25
 
 # Shutdown all servers
 shutdownServer(h1)
@@ -158,11 +193,19 @@ h_tls <- runServer(
 )
 
 # List servers to confirm it's running
-servers <- listServers()
-for(i in seq_along(servers)) {
-  sprintf("  Server %d: %s on %s\n", i, servers[[i]][1], servers[[i]][2]) |> cat()
-}
-#>   Server 1: . on 127.0.0.1:8443
+listServers() |> str()
+#> List of 1
+#>  $ :List of 8
+#>   ..$ directory      : chr "."
+#>   ..$ address        : chr "127.0.0.1:8443"
+#>   ..$ prefix         : chr ""
+#>   ..$ protocol       : chr "HTTPS"
+#>   ..$ logging        : chr "silent"
+#>   ..$ log_handler    : chr "none"
+#>   ..$ log_destination: chr "none"
+#>   ..$ log_function   : chr "none"
+#>   ..- attr(*, "class")= chr "server_info"
+#>  - attr(*, "class")= chr "server_list"
 
 # Test the HTTPS server - we'll use system2 with curl since readLines
 # doesn't handle self-signed certificates well
@@ -190,6 +233,98 @@ shutdownServer(h_tls)
 length(listServers())
 #> [1] 0
 ```
+
+### Background Log Handling
+
+The package implements asynchronous log handling using R’s async
+handling capabilities that was adapted from Simon Urbanek’s [async
+callback pattern](https://github.com/s-u/background). Each server can
+have a custom log handler:
+
+``` r
+# Default console logging
+h1 <- runServer(dir = ".", addr = "127.0.0.1:8350", blocking = FALSE, silent = FALSE)
+
+# Custom file logger
+logfile <- tempfile("custom_", fileext = ".log")
+file_logger <- function(handler, message, user) {
+  cat(format(Sys.time(), "[%Y-%m-%d %H:%M:%S]"), message, file = logfile, append = TRUE)
+}
+h2 <- runServer(dir = ".", addr = "127.0.0.1:8351", blocking = FALSE, 
+                silent = FALSE, log_handler = file_logger)
+
+# Custom console logger with prefix
+console_logger <- function(handler, message, user) {
+  cat("[CUSTOM-SERVER]", message)
+  flush.console()
+}
+h3 <- runServer(dir = ".", addr = "127.0.0.1:8352", blocking = FALSE, 
+                silent = FALSE, log_handler = console_logger)
+
+# Silent mode (no logs)
+h4 <- runServer(dir = ".", addr = "127.0.0.1:8353", blocking = FALSE, silent = TRUE)
+
+listServers() |> str()
+#> List of 4
+#>  $ :List of 8
+#>   ..$ directory      : chr "."
+#>   ..$ address        : chr "127.0.0.1:8350"
+#>   ..$ prefix         : chr ""
+#>   ..$ protocol       : chr "HTTP"
+#>   ..$ logging        : chr "logging"
+#>   ..$ log_handler    : chr "default"
+#>   ..$ log_destination: chr "console"
+#>   ..$ log_function   : chr ".default_log_callback"
+#>   ..- attr(*, "class")= chr "server_info"
+#>  $ :List of 8
+#>   ..$ directory      : chr "."
+#>   ..$ address        : chr "127.0.0.1:8351"
+#>   ..$ prefix         : chr ""
+#>   ..$ protocol       : chr "HTTP"
+#>   ..$ logging        : chr "logging"
+#>   ..$ log_handler    : chr "custom_function"
+#>   ..$ log_destination: chr "custom"
+#>   ..$ log_function   : chr "function (handler, message, user) "
+#>   ..- attr(*, "class")= chr "server_info"
+#>  $ :List of 8
+#>   ..$ directory      : chr "."
+#>   ..$ address        : chr "127.0.0.1:8352"
+#>   ..$ prefix         : chr ""
+#>   ..$ protocol       : chr "HTTP"
+#>   ..$ logging        : chr "logging"
+#>   ..$ log_handler    : chr "custom_function"
+#>   ..$ log_destination: chr "custom"
+#>   ..$ log_function   : chr "function (handler, message, user) "
+#>   ..- attr(*, "class")= chr "server_info"
+#>  $ :List of 8
+#>   ..$ directory      : chr "."
+#>   ..$ address        : chr "127.0.0.1:8353"
+#>   ..$ prefix         : chr ""
+#>   ..$ protocol       : chr "HTTP"
+#>   ..$ logging        : chr "silent"
+#>   ..$ log_handler    : chr "none"
+#>   ..$ log_destination: chr "none"
+#>   ..$ log_function   : chr "none"
+#>   ..- attr(*, "class")= chr "server_info"
+#>  - attr(*, "class")= chr "server_list"
+# Cleanup
+shutdownServer(h1)
+shutdownServer(h2)
+shutdownServer(h3)
+shutdownServer(h4)
+
+# let's get the log by making R idle !
+Sys.sleep(1)
+#> [goserveR] 2025/10/04 23:05:15.065649 Serving directory "." on http://0.0.0.0:8080
+#> 2025/10/04 23:05:15.089798 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:35306 420.93µs
+#> 2025/10/04 23:05:15.092219 Shutdown signal received—shutting down HTTP server at 0.0.0.0:8080 (prefix: /home/sounkoutoure/Projects/goServeR)
+# Check custom log file
+if (file.exists(logfile)) {
+  cat(readLines(logfile, n = 3), sep = "\n")
+}
+```
+
+## On TLS Certificates
 
 **Note**: The included certificate files are for testing purposes only
 and should not be used in production. For development with
@@ -231,7 +366,10 @@ library. Interrupts are now handled entirely at the C level: the Go
 server runs in a background thread, and the main C thread periodically
 checks for user interrupts using the R API. If an interrupt is detected,
 the C code signals the Go server to shut down. This approach is robust,
-portable, and keeps all R session control in C, not Go.
+portable, and keeps all R session control in C, not Go. Morover logging
+is now handled asynchronously using asynchronous input handlers as
+adapted from Simon Urbanek’s [async callback
+pattern](https://github.com/s-u/background).
 
 ## TODO
 
@@ -242,7 +380,6 @@ portable, and keeps all R session control in C, not Go.
     have to go through pipes or similar to get the request to the main R
     thread. we may use ideas from
     [background](https://github.com/s-u/background)
-- [ ] Support windows ?
 
 ## REFERENCES
 

@@ -1,6 +1,17 @@
 # goserveR NEWS
 
+## goserveR 0.1.2-0.91000
+
+- **NEW**: Added custom log handler support via `log_handler` parameter in `runServer()`. Users can now provide custom functions to process server logs (e.g., file logging, custom formatting).
+- Fixed race conditions in background log handlers that could cause test hanging during server shutdown.
+- Improved thread-safe coordination between server shutdown and async log handler cleanup.
+- Enhanced error handling in log callback functions to prevent cascading failures.
+- Added proper input handler removal during server finalization to prevent reading from closed pipes.
+- All tests now pass reliably without hanging issues during concurrent server operations.
+- Added comprehensive tests for custom log handler functionality.
+
 ## goserveR 0.1.2
+
 - Serve files and directories at the correct URL paths by default (root or prefix), matching standard Go FileServer behavior.
 - Directory listing is enabled by default if no index.html is present.
 - Always use the absolute path for the served directory at the Go level for robust file serving and logging.
@@ -9,12 +20,14 @@
 - All tinytest tests pass after these changes.
 
 ## goserveR 0.1.1-3.90000
+
 - Interrupt handling is now fully managed at the C level: the Go server runs in a background thread, and the main C thread checks for user interrupts and signals shutdown if needed.
 - Improved portability: platform abstraction macros for threading, pipes, and sleep were added to support both UNIX and Windows (RTools) builds.
 - All server output and interrupt handling now work robustly in both blocking and background modes.
 - Updated documentation to reflect new architecture and usage.
 
 ## goserveR 0.1.1
+
 - Bumped version to 0.1.1.
 - Initial release of the package with HTTP file server functionality.
 - Supports range requests and unbounded CORS.

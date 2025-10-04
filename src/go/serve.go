@@ -23,8 +23,8 @@ import (
 	"time"
 )
 
-//export RunServerWithShutdown
-func RunServerWithShutdown(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, cCoop, cTls, cSilent C.int, cCertFile, cKeyFile *C.char, shutdownFd C.int) {
+//export RunServerWithLogging
+func RunServerWithLogging(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, cCoop, cTls, cSilent C.int, cCertFile, cKeyFile *C.char, shutdownFd, logFd C.int) {
 	dir := C.GoString(cDir)
 	addr := C.GoString(cAddr)
 	prefix := C.GoString(cPrefix)
@@ -32,7 +32,7 @@ func RunServerWithShutdown(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, 
 	keyFile := C.GoString(cKeyFile)
 	cors := cCors != 0
 	coop := cCoop != 0
-	useTLS := cTls != 0 // renamed from tls to avoid shadowing
+	useTLS := cTls != 0
 	silent := cSilent != 0
 
 	if dir == "" {
@@ -49,10 +49,15 @@ func RunServerWithShutdown(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, 
 		prefix = absDir
 	}
 
-	serveLog := log.New(os.Stdout, "", log.LstdFlags|log.Lmicroseconds)
+	// Create logger that writes to the log pipe
+	var logWriter io.Writer
 	if silent {
-		serveLog.SetOutput(io.Discard)
+		logWriter = io.Discard
+	} else {
+		logWriter = os.NewFile(uintptr(logFd), "log-pipe")
 	}
+
+	serveLog := log.New(logWriter, "", log.LstdFlags|log.Lmicroseconds)
 
 	mux := http.NewServeMux()
 	fileHandler := serveLogger(serveLog, http.FileServer(http.Dir(absDir)))
@@ -78,11 +83,18 @@ func RunServerWithShutdown(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, 
 
 	serverClosed := make(chan struct{})
 	go func() {
+		// Wrap server execution with panic recovery
+		defer func() {
+			if r := recover(); r != nil {
+				serveLog.Printf("PANIC: Server panicked: %v", r)
+				close(serverClosed)
+			}
+		}()
+
 		if useTLS {
 			serveLog.Printf("Serving directory %q on https://%v", dir, addr)
 			if err := srv.ListenAndServeTLS(certFile, keyFile); err != http.ErrServerClosed {
 				serveLog.Printf("HTTPS server error: %v", err)
-				// Signal shutdown on critical error
 				close(serverClosed)
 				return
 			}
@@ -90,7 +102,6 @@ func RunServerWithShutdown(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, 
 			serveLog.Printf("Serving directory %q on http://%v", dir, addr)
 			if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 				serveLog.Printf("HTTP server error: %v", err)
-				// Signal shutdown on critical error
 				close(serverClosed)
 				return
 			}

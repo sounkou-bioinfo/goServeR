@@ -6,13 +6,15 @@
 #include <signal.h>
 
 // Make sure the declaration matches the implementation
-SEXP run_server(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP run_server(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP list_servers();
 SEXP shutdown_server(SEXP);
+SEXP register_log_handler(SEXP, SEXP, SEXP);
+SEXP remove_log_handler(SEXP);
 
 // RC-level (raw C) entry points
-SEXP RC_StartServer(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_cors, SEXP r_coop, SEXP r_tls, SEXP r_certfile, SEXP r_keyfile, SEXP r_silent) {
-    return run_server(r_dir, r_addr, r_prefix, r_blocking, r_cors, r_coop, r_tls, r_certfile, r_keyfile, r_silent);
+SEXP RC_StartServer(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_cors, SEXP r_coop, SEXP r_tls, SEXP r_certfile, SEXP r_keyfile, SEXP r_silent, SEXP r_log_handler) {
+    return run_server(r_dir, r_addr, r_prefix, r_blocking, r_cors, r_coop, r_tls, r_certfile, r_keyfile, r_silent, r_log_handler);
 }
 SEXP RC_ListServers() {
     return list_servers();
@@ -25,9 +27,11 @@ SEXP RC_ShutdownServer(SEXP extptr) {
 static const R_CallMethodDef CallEntries[] = {
     {"RC_list_servers", (DL_FUNC) &list_servers, 0},
     {"RC_shutdown_server", (DL_FUNC) &shutdown_server, 1},
-    {"RC_StartServer", (DL_FUNC) &RC_StartServer, 10},
+    {"RC_StartServer", (DL_FUNC) &RC_StartServer, 11},
     {"RC_ListServers", (DL_FUNC) &RC_ListServers, 0},
     {"RC_ShutdownServer", (DL_FUNC) &RC_ShutdownServer, 1},
+    {"RC_register_log_handler", (DL_FUNC) &register_log_handler, 3},
+    {"RC_remove_log_handler", (DL_FUNC) &remove_log_handler, 1},
     {NULL, NULL, 0}
 };
 

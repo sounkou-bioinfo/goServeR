@@ -4,7 +4,7 @@ SRCDIR = $(CURDIR)
 GO = $(shell which go)
 GOSRC_DIR = $(SRCDIR)/go
 GO_SRCS = $(wildcard $(GOSRC_DIR)/*.go)
-C_SRCS = init.c Rserve.c interupt.c
+C_SRCS = init.c Rserve.c interupt.c background.c
 C_OBJS = $(patsubst %.c,%.o,$(C_SRCS))
 OBJECTS = serve.a $(C_OBJS)
 

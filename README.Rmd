@@ -69,7 +69,7 @@ To start a background server and get a handle
 
 ```{r background}
 h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE)
-listServers()
+listServers() |> str()
 currentDir <- normalizePath(".")
 readLines(paste0("http://0.0.0.0:8080/", currentDir)) |>
   head(10)
@@ -87,11 +87,7 @@ h2 <- runServer(dir = ".", addr = "127.0.0.1:8082", blocking = FALSE, silent = T
 h3 <- runServer(dir = ".", addr = "127.0.0.1:8083", blocking = FALSE, silent = TRUE)
 
 # List all running servers
-servers <- listServers()
-
-for(i in seq_along(servers)) {
-  sprintf("  Server %d: %s on %s\n", i, servers[[i]][1], servers[[i]][2]) |> cat()
-}
+listServers() |> str()
 
 # Access different servers
 
@@ -132,10 +128,7 @@ h_tls <- runServer(
 )
 
 # List servers to confirm it's running
-servers <- listServers()
-for(i in seq_along(servers)) {
-  sprintf("  Server %d: %s on %s\n", i, servers[[i]][1], servers[[i]][2]) |> cat()
-}
+listServers() |> str()
 
 # Test the HTTPS server - we'll use system2 with curl since readLines
 # doesn't handle self-signed certificates well
@@ -157,6 +150,49 @@ shutdownServer(h_tls)
 length(listServers())
 ```
 
+### Background Log Handling
+
+The package implements asynchronous log handling using R's async handling capabilities that was adapted from Simon Urbanek's [async callback pattern](https://github.com/s-u/background). Each server can have a custom log handler:
+
+```{r log_handlers}
+# Default console logging
+h1 <- runServer(dir = ".", addr = "127.0.0.1:8350", blocking = FALSE, silent = FALSE)
+
+# Custom file logger
+logfile <- tempfile("custom_", fileext = ".log")
+file_logger <- function(handler, message, user) {
+  cat(format(Sys.time(), "[%Y-%m-%d %H:%M:%S]"), message, file = logfile, append = TRUE)
+}
+h2 <- runServer(dir = ".", addr = "127.0.0.1:8351", blocking = FALSE, 
+                silent = FALSE, log_handler = file_logger)
+
+# Custom console logger with prefix
+console_logger <- function(handler, message, user) {
+  cat("[CUSTOM-SERVER]", message)
+  flush.console()
+}
+h3 <- runServer(dir = ".", addr = "127.0.0.1:8352", blocking = FALSE, 
+                silent = FALSE, log_handler = console_logger)
+
+# Silent mode (no logs)
+h4 <- runServer(dir = ".", addr = "127.0.0.1:8353", blocking = FALSE, silent = TRUE)
+
+listServers() |> str()
+# Cleanup
+shutdownServer(h1)
+shutdownServer(h2)
+shutdownServer(h3)
+shutdownServer(h4)
+
+# let's get the log by making R idle !
+Sys.sleep(1)
+# Check custom log file
+if (file.exists(logfile)) {
+  cat(readLines(logfile, n = 3), sep = "\n")
+}
+```
+
+## On TLS Certificates
 **Note**: The included certificate files are for testing purposes only and should not be used in production. For development with browser-trusted certificates, use `mkcert` to generate locally-trusted certificates:
 
 ```bash
@@ -186,18 +222,18 @@ openssl req -new -x509 -key server.key -out server.crt -days 365
 ```
 
 ## How it works ?
-We wrote a standard Go HTTP file server, created a static library from it, and then wrote the usual R C API wrappers for the cgo (static) library. Interrupts are now handled entirely at the C level: the Go server runs in a background thread, and the main C thread periodically checks for user interrupts using the R API. If an interrupt is detected, the C code signals the Go server to shut down. This approach is robust, portable, and keeps all R session control in C, not Go.
+
+We wrote a standard Go HTTP file server, created a static library from it, and then wrote the usual R C API wrappers for the cgo (static) library. Interrupts are now handled entirely at the C level: the Go server runs in a background thread, and the main C thread periodically checks for user interrupts using the R API. If an interrupt is detected, the C code signals the Go server to shut down. This approach is robust, portable, and keeps all R session control in C, not Go. Morover logging is now handled asynchronously using asynchronous input handlers as adapted from Simon Urbanek's [async callback pattern](https://github.com/s-u/background).
 
 ## TODO
 
 - [ ] Try to implement a basic [Rook](https://github.com/jeffreyhorner/Rook) Rook specs interface using ?
   - [ ] issue here is since we elect to not call R from  go routines, we have to go through pipes or similar to get the request to the main R thread. we may use ideas from [background](https://github.com/s-u/background)
-- [ ] Support windows ?
 
 
 ## REFERENCES
 
--   https://purrple.cat/blog/2017/05/14/calling-go-from-r/
--   https://mahowald.github.io/go-ffi/
--   https://cran.r-project.org/doc/manuals/r-devel/R-exts.pdf
--   https://github.com/eliben/static-server
+- <https://purrple.cat/blog/2017/05/14/calling-go-from-r/>
+- <https://mahowald.github.io/go-ffi/>
+- <https://cran.r-project.org/doc/manuals/r-devel/R-exts.pdf>
+- <https://github.com/eliben/static-server>

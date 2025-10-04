@@ -15,7 +15,8 @@ StartServer(
   tls = FALSE,
   certfile = "cert.pem",
   keyfile = "key.pem",
-  silent = FALSE
+  silent = FALSE,
+  log_handler = NULL
 )
 }
 \arguments{
@@ -38,6 +39,8 @@ StartServer(
 \item{keyfile}{path to TLS key file}
 
 \item{silent}{logical, suppress server logs}
+
+\item{log_handler}{function, custom log handler function(handler, message, user)}
 }
 \description{
 StartServer (advanced/manual use)

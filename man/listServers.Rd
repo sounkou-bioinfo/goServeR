@@ -3,14 +3,14 @@
 \name{listServers}
 \alias{listServers}
 \title{listServers
-List all running background servers}
+List all running background servers with detailed information}
 \usage{
 listServers()
 }
 \value{
-a list of server info
+a server_list S3 object containing server information
 }
 \description{
 listServers
-List all running background servers
+List all running background servers with detailed information
 }
