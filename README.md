@@ -67,6 +67,9 @@ library(goserveR)
 setTimeLimit(elapsed = 5, transient = TRUE)
 runServer(dir = ".", addr = "0.0.0.0:8080", silent = TRUE)
 #> Server started in blocking mode. Press Ctrl+C to interrupt.
+#> Server address: 0.0.0.0:8080
+#> Static files directory: .
+#> URL prefix:
 setTimeLimit()
 ```
 
@@ -311,10 +314,10 @@ listServers() |> str()
 
 # let's get the log by making R idle !
 Sys.sleep(5)
-#> [goserveR] 2025/10/05 00:05:02.336204 Serving directory "." on http://127.0.0.1:8350
+#> [goserveR] 2025/10/05 00:48:12.676508 Serving directory "." on http://127.0.0.1:8350
 #> 
-#> *** [CUSTOM-SERVER] *** 2025/10/05 00:05:02.342104 Serving directory "." on http://127.0.0.1:8352
-#> 2025/10/05 00:05:02.343257 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:55940 154.424µs
+#> *** [CUSTOM-SERVER] *** 2025/10/05 00:48:12.683762 Serving directory "." on http://127.0.0.1:8352
+#> 2025/10/05 00:48:12.685037 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:58796 237.691µs
 #>  *** END ***
 shutdownServer(h1)
 shutdownServer(h2)
@@ -326,8 +329,8 @@ shutdownServer(h4)
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")
 }
-#> [2025-10-05 00:05:02] 2025/10/05 00:05:02.338831 Serving directory "." on http://127.0.0.1:8351
-#> 2025/10/05 00:05:02.340110 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:37276 174.422µs
+#> [2025-10-05 00:48:12] 2025/10/05 00:48:12.679533 Serving directory "." on http://127.0.0.1:8351
+#> 2025/10/05 00:48:12.681360 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:56916 215.619µs
 #> 
 ```
 
