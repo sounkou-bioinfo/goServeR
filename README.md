@@ -152,13 +152,13 @@ listServers() |> str()
 
 #Server 1 (port 8081) 
 length(readLines(paste0("http://127.0.0.1:8081/", normalizePath("."))))
-#> [1] 25
+#> [1] 26
 #Server 2 (port 8082)
 length(readLines(paste0("http://127.0.0.1:8082/", normalizePath("."))))
-#> [1] 25
+#> [1] 26
 #Server 3 (port 8083)
 length(readLines(paste0("http://127.0.0.1:8083/", normalizePath("."))))
-#> [1] 25
+#> [1] 26
 
 # Shutdown all servers
 shutdownServer(h1)
@@ -311,13 +311,13 @@ listServers() |> str()
 # Cleanup
 # let's get the log by making R idle !
 Sys.sleep(5)
-#> [goserveR] 2025/10/04 23:25:01.202417 Serving directory "." on http://0.0.0.0:8080
-#> 2025/10/04 23:25:01.237473 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:58140 325.229µs
-#> 2025/10/04 23:25:01.240355 Shutdown signal received—shutting down HTTP server at 0.0.0.0:8080 (prefix: /home/sounkoutoure/Projects/goServeR)
-#> [goserveR] 2025/10/04 23:25:01.363791 Serving directory "." on http://127.0.0.1:8350
+#> [goserveR] 2025/10/04 23:30:29.795782 Serving directory "." on http://0.0.0.0:8080
+#> 2025/10/04 23:30:29.822849 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:60426 169.434µs
+#> 2025/10/04 23:30:29.825256 Shutdown signal received—shutting down HTTP server at 0.0.0.0:8080 (prefix: /home/sounkoutoure/Projects/goServeR)
+#> [goserveR] 2025/10/04 23:30:29.959794 Serving directory "." on http://127.0.0.1:8350
 #> 
-#> *** [CUSTOM-SERVER] *** 2025/10/04 23:25:01.369053 Serving directory "." on http://127.0.0.1:8352
-#> 2025/10/04 23:25:01.370622 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:54198 264.406µs
+#> *** [CUSTOM-SERVER] *** 2025/10/04 23:30:29.967138 Serving directory "." on http://127.0.0.1:8352
+#> 2025/10/04 23:30:29.969408 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:52072 241.628µs
 #>  *** END ***
 shutdownServer(h1)
 shutdownServer(h2)
@@ -329,8 +329,8 @@ shutdownServer(h4)
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")
 }
-#> [2025-10-04 23:25:01] 2025/10/04 23:25:01.366020 Serving directory "." on http://127.0.0.1:8351
-#> 2025/10/04 23:25:01.367332 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:36242 229.022µs
+#> [2025-10-04 23:30:29] 2025/10/04 23:30:29.961978 Serving directory "." on http://127.0.0.1:8351
+#> 2025/10/04 23:30:29.963668 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:60710 247.71µs
 #> 
 ```
 
