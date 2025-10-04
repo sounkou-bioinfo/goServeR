@@ -161,31 +161,33 @@ h1 <- runServer(dir = ".", addr = "127.0.0.1:8350", blocking = FALSE, silent = F
 # Custom file logger
 logfile <- tempfile("custom_", fileext = ".log")
 file_logger <- function(handler, message, user) {
-  cat(format(Sys.time(), "[%Y-%m-%d %H:%M:%S]"), message, file = logfile, append = TRUE)
+  cat(format(Sys.time(), "[%Y-%m-%d %H:%M:%S]"), message, "\n", file = logfile, append = TRUE)
 }
 h2 <- runServer(dir = ".", addr = "127.0.0.1:8351", blocking = FALSE, 
                 silent = FALSE, log_handler = file_logger)
-readLines(paste0("http://127.0.0.1:8351/", normalizePath(".")))
+# read some lines to generate logs
+bunk <- readLines(paste0("http://127.0.0.1:8351/", normalizePath(".")))
 # Custom console logger with prefix
 console_logger <- function(handler, message, user) {
-  cat("[CUSTOM-SERVER]", message)
+  cat("\n*** [CUSTOM-SERVER] ***", message, "*** END ***\n")
   flush.console()
 }
 h3 <- runServer(dir = ".", addr = "127.0.0.1:8352", blocking = FALSE, 
                 silent = FALSE, log_handler = console_logger)
-readLines(paste0("http://127.0.0.1:8352/", normalizePath(".")))
+bunk <- readLines(paste0("http://127.0.0.1:8352/", normalizePath(".")))
 # Silent mode (no logs)
 h4 <- runServer(dir = ".", addr = "127.0.0.1:8353", blocking = FALSE, silent = TRUE)
 
 listServers() |> str()
 # Cleanup
+# let's get the log by making R idle !
+Sys.sleep(5)
 shutdownServer(h1)
 shutdownServer(h2)
 shutdownServer(h3)
 shutdownServer(h4)
 
-# let's get the log by making R idle !
-Sys.sleep(1)
+
 # Check custom log file
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")

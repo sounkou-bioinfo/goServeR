@@ -248,19 +248,20 @@ h1 <- runServer(dir = ".", addr = "127.0.0.1:8350", blocking = FALSE, silent = F
 # Custom file logger
 logfile <- tempfile("custom_", fileext = ".log")
 file_logger <- function(handler, message, user) {
-  cat(format(Sys.time(), "[%Y-%m-%d %H:%M:%S]"), message, file = logfile, append = TRUE)
+  cat(format(Sys.time(), "[%Y-%m-%d %H:%M:%S]"), message, "\n", file = logfile, append = TRUE)
 }
 h2 <- runServer(dir = ".", addr = "127.0.0.1:8351", blocking = FALSE, 
                 silent = FALSE, log_handler = file_logger)
-
+# read some lines to generate logs
+bunk <- readLines(paste0("http://127.0.0.1:8351/", normalizePath(".")))
 # Custom console logger with prefix
 console_logger <- function(handler, message, user) {
-  cat("[CUSTOM-SERVER]", message)
+  cat("\n*** [CUSTOM-SERVER] ***", message, "*** END ***\n")
   flush.console()
 }
 h3 <- runServer(dir = ".", addr = "127.0.0.1:8352", blocking = FALSE, 
                 silent = FALSE, log_handler = console_logger)
-
+bunk <- readLines(paste0("http://127.0.0.1:8352/", normalizePath(".")))
 # Silent mode (no logs)
 h4 <- runServer(dir = ".", addr = "127.0.0.1:8353", blocking = FALSE, silent = TRUE)
 
@@ -308,20 +309,29 @@ listServers() |> str()
 #>   ..- attr(*, "class")= chr "server_info"
 #>  - attr(*, "class")= chr "server_list"
 # Cleanup
+# let's get the log by making R idle !
+Sys.sleep(5)
+#> [goserveR] 2025/10/04 23:25:01.202417 Serving directory "." on http://0.0.0.0:8080
+#> 2025/10/04 23:25:01.237473 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:58140 325.229µs
+#> 2025/10/04 23:25:01.240355 Shutdown signal received—shutting down HTTP server at 0.0.0.0:8080 (prefix: /home/sounkoutoure/Projects/goServeR)
+#> [goserveR] 2025/10/04 23:25:01.363791 Serving directory "." on http://127.0.0.1:8350
+#> 
+#> *** [CUSTOM-SERVER] *** 2025/10/04 23:25:01.369053 Serving directory "." on http://127.0.0.1:8352
+#> 2025/10/04 23:25:01.370622 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:54198 264.406µs
+#>  *** END ***
 shutdownServer(h1)
 shutdownServer(h2)
 shutdownServer(h3)
 shutdownServer(h4)
 
-# let's get the log by making R idle !
-Sys.sleep(1)
-#> [goserveR] 2025/10/04 23:05:15.065649 Serving directory "." on http://0.0.0.0:8080
-#> 2025/10/04 23:05:15.089798 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:35306 420.93µs
-#> 2025/10/04 23:05:15.092219 Shutdown signal received—shutting down HTTP server at 0.0.0.0:8080 (prefix: /home/sounkoutoure/Projects/goServeR)
+
 # Check custom log file
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")
 }
+#> [2025-10-04 23:25:01] 2025/10/04 23:25:01.366020 Serving directory "." on http://127.0.0.1:8351
+#> 2025/10/04 23:25:01.367332 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:36242 229.022µs
+#> 
 ```
 
 ## On TLS Certificates
