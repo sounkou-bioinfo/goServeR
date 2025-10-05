@@ -199,23 +199,13 @@ listServers() |> str()
 
 # Access different endpoints
 # Data endpoint
-tryCatch({
-    data_content <- readLines("http://127.0.0.1:8090/api/data/sample.txt")
-    cat("Data content:", data_content, "\n")
-}, error = function(e) cat("Error:", e$message, "\n"))
+readLines("http://127.0.0.1:8090/api/data/sample.txt")
 
 # Docs endpoint  
-tryCatch({
-    docs_content <- readLines("http://127.0.0.1:8090/docs/doc.txt")
-    cat("Docs content:", docs_content, "\n")
-}, error = function(e) cat("Error:", e$message, "\n"))
+readLines("http://127.0.0.1:8090/docs/doc.txt")
 
 # Files endpoint (current directory)
-tryCatch({
-    files_count <- length(readLines(paste0("http://127.0.0.1:8090/files/", normalizePath("."))))
-    cat("Files endpoint shows", files_count, "items\n")
-}, error = function(e) cat("Error:", e$message, "\n"))
-
+length(readLines(paste0("http://127.0.0.1:8090/files/")))
 # Cleanup
 shutdownServer(h_multi)
 unlink(c("test_data", "test_docs"), recursive = TRUE)

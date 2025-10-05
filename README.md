@@ -266,13 +266,13 @@ listServers() |> str()
 
 #Server 1 (port 8081) 
 length(readLines(paste0("http://127.0.0.1:8081/", normalizePath("."))))
-#> [1] 28
+#> [1] 30
 #Server 2 (port 8082)
 length(readLines(paste0("http://127.0.0.1:8082/", normalizePath("."))))
-#> [1] 28
+#> [1] 30
 #Server 3 (port 8083)
 length(readLines(paste0("http://127.0.0.1:8083/", normalizePath("."))))
-#> [1] 28
+#> [1] 30
 
 # Shutdown all servers
 shutdownServer(h1)
@@ -324,29 +324,16 @@ listServers() |> str()
 
 # Access different endpoints
 # Data endpoint
-tryCatch({
-    data_content <- readLines("http://127.0.0.1:8090/api/data/sample.txt")
-    cat("Data content:", data_content, "\n")
-}, error = function(e) cat("Error:", e$message, "\n"))
-#> Data content: Sample data content
+readLines("http://127.0.0.1:8090/api/data/sample.txt")
+#> [1] "Sample data content"
 
 # Docs endpoint  
-tryCatch({
-    docs_content <- readLines("http://127.0.0.1:8090/docs/doc.txt")
-    cat("Docs content:", docs_content, "\n")
-}, error = function(e) cat("Error:", e$message, "\n"))
-#> Docs content: Documentation content
+readLines("http://127.0.0.1:8090/docs/doc.txt")
+#> [1] "Documentation content"
 
 # Files endpoint (current directory)
-tryCatch({
-    files_count <- length(readLines(paste0("http://127.0.0.1:8090/files/", normalizePath("."))))
-    cat("Files endpoint shows", files_count, "items\n")
-}, error = function(e) cat("Error:", e$message, "\n"))
-#> Warning in file(con, "r"): cannot open URL
-#> 'http://127.0.0.1:8090/files/home/sounkoutoure/Projects/goServeR': HTTP status
-#> was '404 Not Found'
-#> Error: cannot open the connection to 'http://127.0.0.1:8090/files//home/sounkoutoure/Projects/goServeR'
-
+length(readLines(paste0("http://127.0.0.1:8090/files/")))
+#> [1] 32
 # Cleanup
 shutdownServer(h_multi)
 unlink(c("test_data", "test_docs"), recursive = TRUE)
@@ -437,12 +424,12 @@ listServers() |> str()
 
 # let's get the log by making R idle !
 Sys.sleep(5)
-#> [goserveR] 2025/10/05 22:20:28.838402 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/05 22:20:28.838583 Serving 1 directories on http://127.0.0.1:8350
+#> [goserveR] 2025/10/05 22:43:45.409717 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/05 22:43:45.409849 Serving 1 directories on http://127.0.0.1:8350
 #> 
-#> *** [CUSTOM-SERVER] *** 2025/10/05 22:20:28.844863 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/05 22:20:28.845005 Serving 1 directories on http://127.0.0.1:8352
-#> 2025/10/05 22:20:28.847112 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:48694 194.169µs
+#> *** [CUSTOM-SERVER] *** 2025/10/05 22:43:45.415445 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/05 22:43:45.415492 Serving 1 directories on http://127.0.0.1:8352
+#> 2025/10/05 22:43:45.417019 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:47610 317.462µs
 #>  *** END ***
 shutdownServer(h1)
 shutdownServer(h2)
@@ -454,9 +441,9 @@ shutdownServer(h4)
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")
 }
-#> [2025-10-05 22:20:28] 2025/10/05 22:20:28.841279 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/05 22:20:28.841379 Serving 1 directories on http://127.0.0.1:8351
-#> 2025/10/05 22:20:28.842540 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:42546 162.929µs
+#> [2025-10-05 22:43:45] 2025/10/05 22:43:45.412136 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/05 22:43:45.412189 Serving 1 directories on http://127.0.0.1:8351
+#> 2025/10/05 22:43:45.413540 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:48486 245.037µs
 ```
 
 ## On background log handlers
