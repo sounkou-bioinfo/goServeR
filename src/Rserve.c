@@ -205,16 +205,17 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
                 UNPROTECT(1);
             } else {
                 // Use default log handler
-                SEXP create_default_handler = PROTECT(Rf_findFun(Rf_install(".create_default_log_handler"), R_GlobalEnv));
+                SEXP goserveR_ns = PROTECT(R_FindNamespace(mkString("goserveR")));
+                SEXP create_default_handler = PROTECT(Rf_findFun(Rf_install(".create_default_log_handler"), goserveR_ns));
                 if (create_default_handler != R_UnboundValue) {
                     SEXP log_fd = PROTECT(ScalarInteger(srv->log_pipe[0]));
-                    srv->log_handler = eval(lang2(create_default_handler, log_fd), R_GlobalEnv);
+                    srv->log_handler = eval(lang2(create_default_handler, log_fd), goserveR_ns);
                     if (srv->log_handler != R_NilValue) {
                         R_PreserveObject(srv->log_handler);
                     }
-                    UNPROTECT(2);
+                    UNPROTECT(3);
                 } else {
-                    UNPROTECT(1);
+                    UNPROTECT(2);
                 }
             }
         }
@@ -300,23 +301,25 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
                 
                 // Use custom log handler
                 SEXP log_fd = PROTECT(ScalarInteger(srv->log_pipe[0]));
-                srv->log_handler = eval(lang3(Rf_install("registerLogHandler"), log_fd, r_log_handler), R_GlobalEnv);
+                SEXP goserveR_ns = PROTECT(R_FindNamespace(mkString("goserveR")));
+                srv->log_handler = eval(lang3(Rf_install("registerLogHandler"), log_fd, r_log_handler), goserveR_ns);
                 if (srv->log_handler != R_NilValue) {
                     R_PreserveObject(srv->log_handler);
                 }
-                UNPROTECT(1);
+                UNPROTECT(2);
             } else {
                 // Use default log handler
-                SEXP create_default_handler = PROTECT(Rf_findFun(Rf_install(".create_default_log_handler"), R_GlobalEnv));
+                SEXP goserveR_ns = PROTECT(R_FindNamespace(mkString("goserveR")));
+                SEXP create_default_handler = PROTECT(Rf_findFun(Rf_install(".create_default_log_handler"), goserveR_ns));
                 if (create_default_handler != R_UnboundValue) {
                     SEXP log_fd = PROTECT(ScalarInteger(srv->log_pipe[0]));
-                    srv->log_handler = eval(lang2(create_default_handler, log_fd), R_GlobalEnv);
+                    srv->log_handler = eval(lang2(create_default_handler, log_fd), goserveR_ns);
                     if (srv->log_handler != R_NilValue) {
                         R_PreserveObject(srv->log_handler);
                     }
-                    UNPROTECT(2);
+                    UNPROTECT(3);
                 } else {
-                    UNPROTECT(1);
+                    UNPROTECT(2);
                 }
             }
         }
@@ -487,11 +490,12 @@ SEXP shutdown_server(SEXP extptr) {
         
         // Remove log handler first to prevent callbacks during shutdown
         if (srv->log_handler != R_NilValue) {
-            SEXP remove_handler = PROTECT(Rf_findFun(Rf_install("removeLogHandler"), R_GlobalEnv));
+            SEXP goserveR_ns = PROTECT(R_FindNamespace(mkString("goserveR")));
+            SEXP remove_handler = PROTECT(Rf_findFun(Rf_install("removeLogHandler"), goserveR_ns));
             if (remove_handler != R_UnboundValue) {
-                R_tryEval(lang2(remove_handler, srv->log_handler), R_GlobalEnv, NULL);
+                R_tryEval(lang2(remove_handler, srv->log_handler), goserveR_ns, NULL);
             }
-            UNPROTECT(1);
+            UNPROTECT(2);
             R_ReleaseObject(srv->log_handler);
             srv->log_handler = R_NilValue;
         }
@@ -521,11 +525,12 @@ void go_server_finalizer(SEXP extptr) {
         
         // Remove log handler first to prevent callbacks during shutdown
         if (srv->log_handler != R_NilValue) {
-            SEXP remove_handler = PROTECT(Rf_findFun(Rf_install("removeLogHandler"), R_GlobalEnv));
+            SEXP goserveR_ns = PROTECT(R_FindNamespace(mkString("goserveR")));
+            SEXP remove_handler = PROTECT(Rf_findFun(Rf_install("removeLogHandler"), goserveR_ns));
             if (remove_handler != R_UnboundValue) {
-                R_tryEval(lang2(remove_handler, srv->log_handler), R_GlobalEnv, NULL);
+                R_tryEval(lang2(remove_handler, srv->log_handler), goserveR_ns, NULL);
             }
-            UNPROTECT(1);
+            UNPROTECT(2);
         }
         
         PIPE_WRITE(srv->shutdown_pipe, "x", 1);
