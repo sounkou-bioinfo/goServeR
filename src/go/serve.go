@@ -68,7 +68,12 @@ func RunServerWithLogging(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, c
 		fileHandler = enableCOOP(fileHandler)
 	}
 
-	mux.Handle(prefix+"/", http.StripPrefix(prefix, fileHandler))
+	// Handle root prefix "/" properly
+	if prefix == "/" {
+		mux.Handle("/", fileHandler)
+	} else {
+		mux.Handle(prefix+"/", http.StripPrefix(prefix, fileHandler))
+	}
 
 	srv := &http.Server{
 		Addr:    addr,
