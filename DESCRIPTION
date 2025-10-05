@@ -10,6 +10,8 @@ Description: goserveR provides a lightweight HTTP(S) file server implemented in 
  requests, configurable CORS and COOP headers, and optional TLS. The package builds and runs a background server
  that can be cleanly shut down from R using an OS pipe and C/Go interop. Asynchronous log handling is also supported.
 License: GPL (>= 2)
+Depends: R (>= 4.4.1)
+Import: utils
 SystemRequirements: Go (https://golang.org), GNU make
 URL: https://github.com/sounkou-bioinfo/goServeR
 BugReports: https://github.com/sounkou-bioinfo/goServeR/issues
