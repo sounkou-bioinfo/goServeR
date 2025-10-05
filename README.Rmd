@@ -14,11 +14,11 @@ knitr::opts_chunk$set(
 
 [![goserveR status badge](https://sounkou-bioinfo.r-universe.dev/goserveR/badges/version)](https://sounkou-bioinfo.r-universe.dev/goserveR)
 
-This package provides an interface to a simple HTTP file server written in go (go part mostly written in the begining with a fair amount of hallucination by a LLM).
+This package provides an interface to a simple HTTP file server written in go.
 
-The server supports range requests and unbounded CORS. It uses the cgo package to call Go functions from R using the R C extension mechanisms. This is an experimentation with the R C extension mechanism without the very convenient Rcpp.
+The server supports range requests and unbounded CORS. It uses the cgo package to call Go functions from R using the R C extension mechanisms. This is an experimentation with the R C extension mechanism without the very convenient Rcpp as well as filling a need.
 
-The server was very insecure but useful for my use case of serving local BCF/BAM files to an [ambiorix](https://ambiorix.dev/) app using [igv.js](https://github.com/igvteam/igv.js) (because {httpuv} does not support range requests [as of now](https://github.com/rstudio/httpuv/issues/259)). This can be installed from [r-universe](https://sounkou-bioinfo.r-universe.dev/goserveR) and requires a go installation. We've added TLS support, basic authentication layer and other improvements since the initial version and we will add allowlisting and other security features in the future.
+The server was very insecure but useful for my use case of serving local BCF/BAM files to an [ambiorix](https://ambiorix.dev/) app using [igv.js](https://github.com/igvteam/igv.js) (because {httpuv} does not support range requests [as of now](https://github.com/rstudio/httpuv/issues/259)). The package can be installed from [r-universe](https://sounkou-bioinfo.r-universe.dev/goserveR) and requires a go installation. We've added TLS support, basic authentication and asynchronous processing of logging in R since the initial version.
 
 ## INSTALL
 
@@ -36,7 +36,7 @@ R CMD INSTALL  .
 Rscript -e 'remotes::install_github("sounkou-bioinfo/goServeR")'
 # or via r-universe 
 Rscript -e "install.packages('goserveR', repos = c('https://sounkou-bioinfo.r-universe.dev'))"
-
+# CRAN to be coming
 ```
 
 ## Usage Example

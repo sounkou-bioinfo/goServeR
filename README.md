@@ -5,24 +5,23 @@
 badge](https://sounkou-bioinfo.r-universe.dev/goserveR/badges/version)](https://sounkou-bioinfo.r-universe.dev/goserveR)
 
 This package provides an interface to a simple HTTP file server written
-in go (go part mostly written in the begining with a fair amount of
-hallucination by a LLM).
+in go.
 
 The server supports range requests and unbounded CORS. It uses the cgo
 package to call Go functions from R using the R C extension mechanisms.
 This is an experimentation with the R C extension mechanism without the
-very convenient Rcpp.
+very convenient Rcpp as well as filling a need.
 
 The server was very insecure but useful for my use case of serving local
 BCF/BAM files to an [ambiorix](https://ambiorix.dev/) app using
 [igv.js](https://github.com/igvteam/igv.js) (because {httpuv} does not
 support range requests [as of
-now](https://github.com/rstudio/httpuv/issues/259)). This can be
+now](https://github.com/rstudio/httpuv/issues/259)). The package can be
 installed from
 [r-universe](https://sounkou-bioinfo.r-universe.dev/goserveR) and
 requires a go installation. We’ve added TLS support, basic
-authentication layer and other improvements since the initial version
-and we will add allowlisting and other security features in the future.
+authentication and asynchronous processing of logging in R since the
+initial version.
 
 ## INSTALL
 
@@ -40,6 +39,7 @@ R CMD INSTALL  .
 Rscript -e 'remotes::install_github("sounkou-bioinfo/goServeR")'
 # or via r-universe 
 Rscript -e "install.packages('goserveR', repos = c('https://sounkou-bioinfo.r-universe.dev'))"
+# CRAN to be coming
 ```
 
 ## Usage Example
@@ -60,10 +60,10 @@ curl -L http://0.0.0.0:8080/${PWD} 2> /dev/null \
 sleep 2
 
 kill -9 $pid
-#> <pointer: 0x63ab71a8f6b0>
-#> [goserveR] 2025/10/05 23:16:20.014884 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> [goserveR] 2025/10/05 23:16:20.015029 Serving 1 directories on http://0.0.0.0:8080
-#> [goserveR] 2025/10/05 23:16:21.713640 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:33662 375.953µs
+#> <pointer: 0x5b9ed6bdf6b0>
+#> [goserveR] 2025/10/05 23:23:18.702589 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> [goserveR] 2025/10/05 23:23:18.702827 Serving 1 directories on http://0.0.0.0:8080
+#> [goserveR] 2025/10/05 23:23:20.409994 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:36664 163.901µs
 #> <pre>
 #> <a href="..Rcheck/">..Rcheck/</a>
 #> <a href=".Rbuildignore">.Rbuildignore</a>
@@ -437,12 +437,12 @@ listServers() |> str()
 
 # let's get the log by making R idle !
 Sys.sleep(5)
-#> [goserveR] 2025/10/05 23:16:29.068230 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/05 23:16:29.068420 Serving 1 directories on http://127.0.0.1:8350
+#> [goserveR] 2025/10/05 23:23:27.733488 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/05 23:23:27.733673 Serving 1 directories on http://127.0.0.1:8350
 #> 
-#> *** [CUSTOM-SERVER] *** 2025/10/05 23:16:29.076535 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/05 23:16:29.076639 Serving 1 directories on http://127.0.0.1:8352
-#> 2025/10/05 23:16:29.078973 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:50160 276.244µs
+#> *** [CUSTOM-SERVER] *** 2025/10/05 23:23:27.742816 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/05 23:23:27.742945 Serving 1 directories on http://127.0.0.1:8352
+#> 2025/10/05 23:23:27.744521 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:46740 249.092µs
 #>  *** END ***
 shutdownServer(h1)
 shutdownServer(h2)
@@ -454,9 +454,9 @@ shutdownServer(h4)
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")
 }
-#> [2025-10-05 23:16:29] 2025/10/05 23:16:29.070706 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/05 23:16:29.070768 Serving 1 directories on http://127.0.0.1:8351
-#> 2025/10/05 23:16:29.072140 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:44480 134.485µs
+#> [2025-10-05 23:23:27] 2025/10/05 23:23:27.736791 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/05 23:23:27.736880 Serving 1 directories on http://127.0.0.1:8351
+#> 2025/10/05 23:23:27.739746 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:49244 228.493µs
 ```
 
 ## On background log handlers
