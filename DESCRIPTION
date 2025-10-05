@@ -11,6 +11,8 @@ Description: goserveR provides a lightweight HTTP(S) file server implemented in 
  that can be cleanly shut down from R using an OS pipe and C/Go interop. Asynchronous log handling is also supported.
 License: GPL (>= 2)
 SystemRequirements: Go (https://golang.org), GNU make
+URL: https://github.com/sounkou-bioinfo/goServeR
+BugReports: https://github.com/sounkou-bioinfo/goServeR/issues
 RoxygenNote: 7.3.2
 Encoding: UTF-8
 Suggests:
