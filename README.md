@@ -60,10 +60,10 @@ curl -L http://0.0.0.0:8080/${PWD} 2> /dev/null \
 sleep 2
 
 kill -9 $pid
-#> <pointer: 0x59d43b7f46b0>
-#> [goserveR] 2025/10/05 23:14:02.483525 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> [goserveR] 2025/10/05 23:14:02.483715 Serving 1 directories on http://0.0.0.0:8080
-#> [goserveR] 2025/10/05 23:14:04.140269 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:44380 443.603µs
+#> <pointer: 0x63ab71a8f6b0>
+#> [goserveR] 2025/10/05 23:16:20.014884 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> [goserveR] 2025/10/05 23:16:20.015029 Serving 1 directories on http://0.0.0.0:8080
+#> [goserveR] 2025/10/05 23:16:21.713640 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:33662 375.953µs
 #> <pre>
 #> <a href="..Rcheck/">..Rcheck/</a>
 #> <a href=".Rbuildignore">.Rbuildignore</a>
@@ -437,12 +437,12 @@ listServers() |> str()
 
 # let's get the log by making R idle !
 Sys.sleep(5)
-#> [goserveR] 2025/10/05 23:14:11.687336 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/05 23:14:11.687528 Serving 1 directories on http://127.0.0.1:8350
+#> [goserveR] 2025/10/05 23:16:29.068230 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/05 23:16:29.068420 Serving 1 directories on http://127.0.0.1:8350
 #> 
-#> *** [CUSTOM-SERVER] *** 2025/10/05 23:14:11.694938 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/05 23:14:11.694992 Serving 1 directories on http://127.0.0.1:8352
-#> 2025/10/05 23:14:11.696987 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:59318 184.661µs
+#> *** [CUSTOM-SERVER] *** 2025/10/05 23:16:29.076535 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/05 23:16:29.076639 Serving 1 directories on http://127.0.0.1:8352
+#> 2025/10/05 23:16:29.078973 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:50160 276.244µs
 #>  *** END ***
 shutdownServer(h1)
 shutdownServer(h2)
@@ -454,9 +454,9 @@ shutdownServer(h4)
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")
 }
-#> [2025-10-05 23:14:11] 2025/10/05 23:14:11.690225 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/05 23:14:11.690298 Serving 1 directories on http://127.0.0.1:8351
-#> 2025/10/05 23:14:11.691688 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:44984 212.614µs
+#> [2025-10-05 23:16:29] 2025/10/05 23:16:29.070706 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/05 23:16:29.070768 Serving 1 directories on http://127.0.0.1:8351
+#> 2025/10/05 23:16:29.072140 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:44480 134.485µs
 ```
 
 ## On background log handlers
@@ -511,16 +511,6 @@ sudo certbot --nginx -d yourdomain.com
 openssl genpkey -algorithm RSA -out server.key -pkcs8
 openssl req -new -x509 -key server.key -out server.crt -days 365
 ```
-
-## TODO
-
-- [ ] Try to implement a basic
-  [Rook](https://github.com/jeffreyhorner/Rook) Rook specs interface
-  using ?
-  - [ ] issue here is since we elect to not call R from go routines, we
-    have to go through pipes or similar to get the request to the main R
-    thread. we may use ideas from
-    [background](https://github.com/s-u/background)
 
 ## REFERENCES
 
