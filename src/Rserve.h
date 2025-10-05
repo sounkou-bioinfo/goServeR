@@ -19,9 +19,7 @@
 
 // Go function, this is also available in serve.h
 // The declaration should match the one in serve.h
-void RunServer(char* dir, char* addr, char* prefix);
-void RunServerWithShutdown(char* dir, char* addr, char* prefix, int cors, int coop, int tls, int silent, char* certfile, char* keyfile, int shutdown_fd);
-void RunServerWithLogging(char* dir, char* addr, char* prefix, int cors, int coop, int tls, int silent, char* certfile, char* keyfile, int shutdown_fd, int log_fd);
+void RunServerWithLogging(char* dir, char* addr, char* prefix, int cors, int coop, int tls, int silent, char* certfile, char* keyfile, int shutdown_fd, int log_fd, char* auth_keys);
 
 // Struct to hold server state for background servers
 typedef struct {
@@ -41,11 +39,12 @@ typedef struct {
     SEXP log_handler; // R external pointer to log handler
     SEXP original_log_function; // Store the original R log function
     char* log_file_path; // Store log file path if available
+    char* auth_keys; // NEW: Comma-separated auth keys (NULL = no auth)
     // Add more fields as needed
 } go_server_t;
 
 // Start a server; if blocking, runs in foreground, else background
-SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_cors, SEXP r_coop, SEXP r_tls, SEXP r_certfile, SEXP r_keyfile, SEXP r_silent, SEXP r_log_handler);
+SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_cors, SEXP r_coop, SEXP r_tls, SEXP r_certfile, SEXP r_keyfile, SEXP r_silent, SEXP r_log_handler, SEXP r_auth_keys);
 
 // List all running servers (returns an R list)
 SEXP list_servers();

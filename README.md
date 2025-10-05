@@ -68,7 +68,7 @@ setTimeLimit(elapsed = 5, transient = TRUE)
 runServer(dir = ".", addr = "0.0.0.0:8080", silent = TRUE)
 #> Server started in blocking mode. Press Ctrl+C to interrupt.
 #> Server address: 0.0.0.0:8080
-#> Static files directory: .
+#> Static files directory: /home/sounkoutoure/Projects/goServeR
 #> URL prefix:
 setTimeLimit()
 ```
@@ -79,8 +79,8 @@ To start a background server and get a handle
 h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE, silent = TRUE)
 listServers() |> str()
 #> List of 1
-#>  $ :List of 8
-#>   ..$ directory      : chr "."
+#>  $ :List of 10
+#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
 #>   ..$ address        : chr "0.0.0.0:8080"
 #>   ..$ prefix         : chr ""
 #>   ..$ protocol       : chr "HTTP"
@@ -88,6 +88,8 @@ listServers() |> str()
 #>   ..$ log_handler    : chr "none"
 #>   ..$ log_destination: chr "none"
 #>   ..$ log_function   : chr "none"
+#>   ..$ authentication : chr "disabled"
+#>   ..$ auth_keys      : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
 #>  - attr(*, "class")= chr "server_list"
 currentDir <- normalizePath(".")
@@ -106,6 +108,109 @@ readLines(paste0("http://0.0.0.0:8080/", currentDir)) |>
 shutdownServer(h)
 ```
 
+### Authentication and TLS/HTTPS Support
+
+The package supports both API key authentication and TLS/HTTPS
+connections. You can use them separately or together for secure
+authenticated file serving:
+
+``` r
+
+# Get paths to example certificate and key files
+certfile <- system.file("extdata", "cert.pem", package = "goserveR")
+keyfile <- system.file("extdata", "key.pem", package = "goserveR")
+# write test file
+writeLines("Hello from goServeR!", "test.txt")
+
+# HTTP server with authentication
+h_http_auth <- runServer(dir = ".", addr = "127.0.0.1:8080", prefix = "/", blocking = FALSE, 
+                         auth_keys = c("secret123", "token456"), silent = TRUE)
+
+# Test authentication - wrong key should fail
+tryCatch({
+  download.file("http://127.0.0.1:8080/test.txt", 
+                destfile = tempfile(),
+                headers = c("X-API-Key" = "wrongkey"),
+                quiet = TRUE)
+}, error = function(e) {
+  cat("Authentication failed as expected\n")
+})
+#> Warning in download.file("http://127.0.0.1:8080/test.txt", destfile =
+#> tempfile(), : downloaded length 0 != reported length 13
+#> Warning in download.file("http://127.0.0.1:8080/test.txt", destfile =
+#> tempfile(), : cannot open URL 'http://127.0.0.1:8080/test.txt': HTTP status was
+#> '401 Unauthorized'
+#> Authentication failed as expected
+
+# Test authentication - correct key should succeed
+temp_file <- tempfile()
+download.file("http://127.0.0.1:8080/test.txt", 
+              destfile = temp_file,
+              headers = c("X-API-Key" = "secret123"),
+              quiet = TRUE)
+
+readLines(temp_file)
+#> [1] "Hello from goServeR!"
+
+unlink(temp_file)
+
+# HTTPS server with authentication
+h_https_auth <- runServer(
+  dir = ".", 
+  addr = "127.0.0.1:8443", 
+  tls = TRUE,
+  prefix = "/",
+  certfile = certfile,
+  keyfile = keyfile,
+  auth_keys = c("secure_key_123"),
+  blocking = FALSE,
+  silent = TRUE
+)
+
+# Test HTTPS with authentication using download.file
+temp_file_https <- tempfile()
+download.file("https://127.0.0.1:8443/test.txt", 
+                destfile = temp_file_https,
+                headers = c("X-API-Key" = "secure_key_123"),
+                quiet = TRUE)
+
+readLines(temp_file_https)  
+#> [1] "Hello from goServeR!"
+
+listServers() |> str()
+#> List of 2
+#>  $ :List of 10
+#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
+#>   ..$ address        : chr "127.0.0.1:8080"
+#>   ..$ prefix         : chr "/"
+#>   ..$ protocol       : chr "HTTP"
+#>   ..$ logging        : chr "silent"
+#>   ..$ log_handler    : chr "none"
+#>   ..$ log_destination: chr "none"
+#>   ..$ log_function   : chr "none"
+#>   ..$ authentication : chr "enabled"
+#>   ..$ auth_keys      : chr "secret123,token456"
+#>   ..- attr(*, "class")= chr "server_info"
+#>  $ :List of 10
+#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
+#>   ..$ address        : chr "127.0.0.1:8443"
+#>   ..$ prefix         : chr "/"
+#>   ..$ protocol       : chr "HTTPS"
+#>   ..$ logging        : chr "silent"
+#>   ..$ log_handler    : chr "none"
+#>   ..$ log_destination: chr "none"
+#>   ..$ log_function   : chr "none"
+#>   ..$ authentication : chr "enabled"
+#>   ..$ auth_keys      : chr "secure_key_123"
+#>   ..- attr(*, "class")= chr "server_info"
+#>  - attr(*, "class")= chr "server_list"
+
+# Cleanup
+shutdownServer(h_http_auth)
+shutdownServer(h_https_auth)
+unlink("test.txt")
+```
+
 ### Multiple Servers
 
 You can run multiple servers simultaneously on different ports:
@@ -119,8 +224,8 @@ h3 <- runServer(dir = ".", addr = "127.0.0.1:8083", blocking = FALSE, silent = T
 # List all running servers
 listServers() |> str()
 #> List of 3
-#>  $ :List of 8
-#>   ..$ directory      : chr "."
+#>  $ :List of 10
+#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
 #>   ..$ address        : chr "127.0.0.1:8081"
 #>   ..$ prefix         : chr ""
 #>   ..$ protocol       : chr "HTTP"
@@ -128,9 +233,11 @@ listServers() |> str()
 #>   ..$ log_handler    : chr "none"
 #>   ..$ log_destination: chr "none"
 #>   ..$ log_function   : chr "none"
+#>   ..$ authentication : chr "disabled"
+#>   ..$ auth_keys      : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
-#>  $ :List of 8
-#>   ..$ directory      : chr "."
+#>  $ :List of 10
+#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
 #>   ..$ address        : chr "127.0.0.1:8082"
 #>   ..$ prefix         : chr ""
 #>   ..$ protocol       : chr "HTTP"
@@ -138,9 +245,11 @@ listServers() |> str()
 #>   ..$ log_handler    : chr "none"
 #>   ..$ log_destination: chr "none"
 #>   ..$ log_function   : chr "none"
+#>   ..$ authentication : chr "disabled"
+#>   ..$ auth_keys      : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
-#>  $ :List of 8
-#>   ..$ directory      : chr "."
+#>  $ :List of 10
+#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
 #>   ..$ address        : chr "127.0.0.1:8083"
 #>   ..$ prefix         : chr ""
 #>   ..$ protocol       : chr "HTTP"
@@ -148,6 +257,8 @@ listServers() |> str()
 #>   ..$ log_handler    : chr "none"
 #>   ..$ log_destination: chr "none"
 #>   ..$ log_function   : chr "none"
+#>   ..$ authentication : chr "disabled"
+#>   ..$ auth_keys      : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
 #>  - attr(*, "class")= chr "server_list"
 
@@ -155,82 +266,18 @@ listServers() |> str()
 
 #Server 1 (port 8081) 
 length(readLines(paste0("http://127.0.0.1:8081/", normalizePath("."))))
-#> [1] 26
+#> [1] 28
 #Server 2 (port 8082)
 length(readLines(paste0("http://127.0.0.1:8082/", normalizePath("."))))
-#> [1] 26
+#> [1] 28
 #Server 3 (port 8083)
 length(readLines(paste0("http://127.0.0.1:8083/", normalizePath("."))))
-#> [1] 26
+#> [1] 28
 
 # Shutdown all servers
 shutdownServer(h1)
 shutdownServer(h2)
 shutdownServer(h3)
-
-# Verify cleanup
-length(listServers())
-#> [1] 0
-```
-
-### TLS/HTTPS Support
-
-The package includes support for TLS/HTTPS connections using certificate
-and key files. Example certificate and key files are provided in the
-package for testing purposes:
-
-``` r
-# Get paths to example certificate and key files
-certfile <- system.file("extdata", "cert.pem", package = "goserveR")
-keyfile <- system.file("extdata", "key.pem", package = "goserveR")
-
-# Start an HTTPS server
-h_tls <- runServer(
-  dir = ".", 
-  addr = "127.0.0.1:8443", 
-  tls = TRUE,
-  certfile = certfile,
-  keyfile = keyfile,
-  blocking = FALSE,
-  silent = TRUE
-)
-
-# List servers to confirm it's running
-listServers() |> str()
-#> List of 1
-#>  $ :List of 8
-#>   ..$ directory      : chr "."
-#>   ..$ address        : chr "127.0.0.1:8443"
-#>   ..$ prefix         : chr ""
-#>   ..$ protocol       : chr "HTTPS"
-#>   ..$ logging        : chr "silent"
-#>   ..$ log_handler    : chr "none"
-#>   ..$ log_destination: chr "none"
-#>   ..$ log_function   : chr "none"
-#>   ..- attr(*, "class")= chr "server_info"
-#>  - attr(*, "class")= chr "server_list"
-
-# Test the HTTPS server - we'll use system2 with curl since readLines
-# doesn't handle self-signed certificates well
-if (Sys.which("curl") != "") {
-  # Use curl with -k flag to accept self-signed certificate and -L to follow redirects
-  result <- system2("curl", 
-                   args = c("-k", "-s", "-L", paste0("https://127.0.0.1:8443/", normalizePath("."))),
-                   stdout = TRUE, stderr = TRUE)
-  cat("HTTPS server response (first 5 lines):\n")
-  cat(paste(head(result, 5), collapse = "\n"), "\n")
-} else {
-  cat("curl not available - HTTPS server is running but cannot test from R\n")
-}
-#> HTTPS server response (first 5 lines):
-#> <pre>
-#> <a href="..Rcheck/">..Rcheck/</a>
-#> <a href=".Rbuildignore">.Rbuildignore</a>
-#> <a href=".Rinstignore">.Rinstignore</a>
-#> <a href=".git/">.git/</a>
-
-# Shutdown the TLS server
-shutdownServer(h_tls)
 
 # Verify cleanup
 length(listServers())
@@ -270,8 +317,8 @@ h4 <- runServer(dir = ".", addr = "127.0.0.1:8353", blocking = FALSE, silent = T
 
 listServers() |> str()
 #> List of 4
-#>  $ :List of 8
-#>   ..$ directory      : chr "."
+#>  $ :List of 10
+#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
 #>   ..$ address        : chr "127.0.0.1:8350"
 #>   ..$ prefix         : chr ""
 #>   ..$ protocol       : chr "HTTP"
@@ -279,9 +326,11 @@ listServers() |> str()
 #>   ..$ log_handler    : chr "default"
 #>   ..$ log_destination: chr "console"
 #>   ..$ log_function   : chr ".default_log_callback"
+#>   ..$ authentication : chr "disabled"
+#>   ..$ auth_keys      : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
-#>  $ :List of 8
-#>   ..$ directory      : chr "."
+#>  $ :List of 10
+#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
 #>   ..$ address        : chr "127.0.0.1:8351"
 #>   ..$ prefix         : chr ""
 #>   ..$ protocol       : chr "HTTP"
@@ -289,9 +338,11 @@ listServers() |> str()
 #>   ..$ log_handler    : chr "custom_function"
 #>   ..$ log_destination: chr "custom"
 #>   ..$ log_function   : chr "function (handler, message, user) "
+#>   ..$ authentication : chr "disabled"
+#>   ..$ auth_keys      : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
-#>  $ :List of 8
-#>   ..$ directory      : chr "."
+#>  $ :List of 10
+#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
 #>   ..$ address        : chr "127.0.0.1:8352"
 #>   ..$ prefix         : chr ""
 #>   ..$ protocol       : chr "HTTP"
@@ -299,9 +350,11 @@ listServers() |> str()
 #>   ..$ log_handler    : chr "custom_function"
 #>   ..$ log_destination: chr "custom"
 #>   ..$ log_function   : chr "function (handler, message, user) "
+#>   ..$ authentication : chr "disabled"
+#>   ..$ auth_keys      : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
-#>  $ :List of 8
-#>   ..$ directory      : chr "."
+#>  $ :List of 10
+#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
 #>   ..$ address        : chr "127.0.0.1:8353"
 #>   ..$ prefix         : chr ""
 #>   ..$ protocol       : chr "HTTP"
@@ -309,15 +362,17 @@ listServers() |> str()
 #>   ..$ log_handler    : chr "none"
 #>   ..$ log_destination: chr "none"
 #>   ..$ log_function   : chr "none"
+#>   ..$ authentication : chr "disabled"
+#>   ..$ auth_keys      : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
 #>  - attr(*, "class")= chr "server_list"
 
 # let's get the log by making R idle !
 Sys.sleep(5)
-#> [goserveR] 2025/10/05 15:21:17.477407 Serving directory "." on http://127.0.0.1:8350
+#> [goserveR] 2025/10/05 22:00:04.000677 Serving directory "/home/sounkoutoure/Projects/goServeR" on http://127.0.0.1:8350
 #> 
-#> *** [CUSTOM-SERVER] *** 2025/10/05 15:21:17.488938 Serving directory "." on http://127.0.0.1:8352
-#> 2025/10/05 15:21:17.490246 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:57232 154.805µs
+#> *** [CUSTOM-SERVER] *** 2025/10/05 22:00:04.008046 Serving directory "/home/sounkoutoure/Projects/goServeR" on http://127.0.0.1:8352
+#> 2025/10/05 22:00:04.010492 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:54824 241.801µs
 #>  *** END ***
 shutdownServer(h1)
 shutdownServer(h2)
@@ -329,8 +384,8 @@ shutdownServer(h4)
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")
 }
-#> [2025-10-05 15:21:17] 2025/10/05 15:21:17.483784 Serving directory "." on http://127.0.0.1:8351
-#> 2025/10/05 15:21:17.486483 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:36202 179.735µs
+#> [2025-10-05 22:00:04] 2025/10/05 22:00:04.002869 Serving directory "/home/sounkoutoure/Projects/goServeR" on http://127.0.0.1:8351
+#> 2025/10/05 22:00:04.004369 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:46548 245.709µs
 #> 
 ```
 

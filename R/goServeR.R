@@ -16,6 +16,7 @@ NULL
 #' @param keyfile path to TLS key file
 #' @param silent logical, suppress server logs
 #' @param log_handler function, custom log handler function(handler, message, user)
+#' @param auth_keys character vector of API keys for authentication. Default c() = no auth
 #' @param ... additional arguments passed to the server
 #'
 #' @return NULL (if blocking) or an external pointer (if non-blocking)
@@ -58,6 +59,7 @@ runServer <- function(
     keyfile = "key.pem",
     silent = FALSE,
     log_handler = NULL,
+    auth_keys = c(),
     ...) {
     # Normalize path to prevent basic traversal
     dir <- normalizePath(dir, winslash = "/", mustWork = TRUE)
@@ -78,6 +80,11 @@ runServer <- function(
         is.logical(silent) && length(silent) == 1
     )
 
+    # Validate auth_keys parameter
+    if (!is.null(auth_keys) && !is.character(auth_keys)) {
+        stop("auth_keys must be a character vector or NULL")
+    }
+
     # Validate log_handler if provided
     if (!is.null(log_handler) && !is.function(log_handler)) {
         stop("log_handler must be a function or NULL")
@@ -95,9 +102,9 @@ runServer <- function(
     }
 
     if (blocking) {
-        invisible(.Call(RC_StartServer, dir, addr, prefix, blocking, cors, coop, tls, certfile, keyfile, silent, log_handler))
+        invisible(.Call(RC_StartServer, dir, addr, prefix, blocking, cors, coop, tls, certfile, keyfile, silent, log_handler, auth_keys))
     } else {
-        .Call(RC_StartServer, dir, addr, prefix, blocking, cors, coop, tls, certfile, keyfile, silent, log_handler)
+        .Call(RC_StartServer, dir, addr, prefix, blocking, cors, coop, tls, certfile, keyfile, silent, log_handler, auth_keys)
     }
 }
 
@@ -118,17 +125,21 @@ listServers <- function() {
     # Add names to make the output more readable
     formatted_servers <- lapply(seq_along(servers), function(i) {
         server_info <- servers[[i]]
-        names(server_info) <- c("directory", "address", "prefix", "protocol", "logging", "log_handler", "log_destination", "log_function")
+        names(server_info) <- c("directory", "address", "prefix", "protocol", "logging", "log_handler", "log_destination", "log_function", "auth_keys")
 
         # Enhance log handler and destination information
         log_handler_type <- as.character(server_info[6])
         log_destination <- as.character(server_info[7])
         log_function_info <- as.character(server_info[8])
+        auth_keys_info <- as.character(server_info[9])
 
         # For file loggers, try to get more specific information
         if (log_handler_type == "file_logger" && log_destination %in% c("custom_file", "custom")) {
             log_destination <- "file (path in closure)"
         }
+
+        # Format auth information
+        auth_status <- if (auth_keys_info == "none") "disabled" else "enabled"
 
         # Create a more readable format
         structure(list(
@@ -139,7 +150,9 @@ listServers <- function() {
             logging = as.character(server_info[5]),
             log_handler = log_handler_type,
             log_destination = log_destination,
-            log_function = log_function_info
+            log_function = log_function_info,
+            authentication = auth_status,
+            auth_keys = auth_keys_info
         ), class = "server_info")
     })
 
@@ -169,9 +182,10 @@ shutdownServer <- function(handle) {
 #' @param keyfile path to TLS key file
 #' @param silent logical, suppress server logs
 #' @param log_handler function, custom log handler function(handler, message, user)
+#' @param auth_keys character vector of API keys for authentication
 #' @export
-StartServer <- function(dir, addr, prefix, blocking, cors = FALSE, coop = FALSE, tls = FALSE, certfile = "cert.pem", keyfile = "key.pem", silent = FALSE, log_handler = NULL) {
-    .Call(RC_StartServer, dir, addr, prefix, blocking, cors, coop, tls, certfile, keyfile, silent, log_handler)
+StartServer <- function(dir, addr, prefix, blocking, cors = FALSE, coop = FALSE, tls = FALSE, certfile = "cert.pem", keyfile = "key.pem", silent = FALSE, log_handler = NULL, auth_keys = c()) {
+    .Call(RC_StartServer, dir, addr, prefix, blocking, cors, coop, tls, certfile, keyfile, silent, log_handler, auth_keys)
 }
 
 # Log handler functions
@@ -293,6 +307,7 @@ print.server_info <- function(x, index = NULL, ...) {
         cat(sprintf("  Prefix: %s\n", x$prefix))
     }
     cat(sprintf("  Protocol: %s\n", x$protocol))
+    cat(sprintf("  Authentication: %s\n", x$authentication))
     cat(sprintf("  Logging: %s\n", x$logging))
 
     if (x$logging != "silent") {

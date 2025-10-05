@@ -16,7 +16,8 @@ StartServer(
   certfile = "cert.pem",
   keyfile = "key.pem",
   silent = FALSE,
-  log_handler = NULL
+  log_handler = NULL,
+  auth_keys = c()
 )
 }
 \arguments{
@@ -41,6 +42,8 @@ StartServer(
 \item{silent}{logical, suppress server logs}
 
 \item{log_handler}{function, custom log handler function(handler, message, user)}
+
+\item{auth_keys}{character vector of API keys for authentication}
 }
 \description{
 StartServer (advanced/manual use)

@@ -78,7 +78,7 @@ static void remove_server(go_server_t* srv) {
 // Thread entry for background server
 static void* server_thread_fn(void* arg) {
     go_server_t* srv = (go_server_t*)arg;
-    RunServerWithLogging(srv->dir, srv->addr, srv->prefix, srv->cors, srv->coop, srv->tls, srv->silent, srv->certfile, srv->keyfile, srv->shutdown_pipe[0], srv->log_pipe[1]);
+    RunServerWithLogging(srv->dir, srv->addr, srv->prefix, srv->cors, srv->coop, srv->tls, srv->silent, srv->certfile, srv->keyfile, srv->shutdown_pipe[0], srv->log_pipe[1], srv->auth_keys);
     
     // Safely update running status
     LOCK_SERVER_LIST();
@@ -88,7 +88,7 @@ static void* server_thread_fn(void* arg) {
     return NULL;
 }
 
-SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_cors, SEXP r_coop, SEXP r_tls, SEXP r_certfile, SEXP r_keyfile, SEXP r_silent, SEXP r_log_handler) {
+SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_cors, SEXP r_coop, SEXP r_tls, SEXP r_certfile, SEXP r_keyfile, SEXP r_silent, SEXP r_log_handler, SEXP r_auth_keys) {
     // Check that inputs are character vectors of length 1
     if (TYPEOF(r_dir) != STRSXP || LENGTH(r_dir) != 1 ||
         TYPEOF(r_addr) != STRSXP || LENGTH(r_addr) != 1 ||
@@ -107,6 +107,12 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
     if (r_log_handler != R_NilValue && TYPEOF(r_log_handler) != CLOSXP) {
         error("log_handler must be a function or NULL");
     }
+    
+    // Validate auth_keys: must be character vector or NULL
+    if (r_auth_keys != R_NilValue && TYPEOF(r_auth_keys) != STRSXP) {
+        error("auth_keys must be a character vector or NULL");
+    }
+    
     const char* dir = CHAR(STRING_ELT(r_dir, 0));
     const char* addr = CHAR(STRING_ELT(r_addr, 0));
     const char* prefix = CHAR(STRING_ELT(r_prefix, 0));
@@ -117,6 +123,26 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
     const char* certfile = CHAR(STRING_ELT(r_certfile, 0));
     const char* keyfile = CHAR(STRING_ELT(r_keyfile, 0));
     int silent = LOGICAL(r_silent)[0];
+    
+    // Process auth_keys: convert R character vector to comma-separated string
+    char* auth_keys_str = NULL;
+    if (r_auth_keys != R_NilValue && LENGTH(r_auth_keys) > 0) {
+        // Calculate total length needed
+        int total_len = 0;
+        for (int i = 0; i < LENGTH(r_auth_keys); i++) {
+            total_len += strlen(CHAR(STRING_ELT(r_auth_keys, i)));
+            if (i > 0) total_len += 1; // for comma
+        }
+        total_len += 1; // for null terminator
+        
+        // Build comma-separated string
+        auth_keys_str = (char*)malloc(total_len);
+        auth_keys_str[0] = '\0';
+        for (int i = 0; i < LENGTH(r_auth_keys); i++) {
+            if (i > 0) strcat(auth_keys_str, ",");
+            strcat(auth_keys_str, CHAR(STRING_ELT(r_auth_keys, i)));
+        }
+    }
     
     PIPE_TYPE shutdown_pipe[2];
     PIPE_TYPE log_pipe[2];
@@ -147,6 +173,7 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
         srv->log_handler = R_NilValue;
         srv->original_log_function = R_NilValue;
         srv->log_file_path = NULL;
+        srv->auth_keys = auth_keys_str ? strdup(auth_keys_str) : NULL;  // NEW: Copy auth keys
         
         // Setup log handler based on parameters
         if (!silent) {
@@ -182,6 +209,8 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
             PIPE_CLOSE(shutdown_pipe);
             PIPE_CLOSE(log_pipe);
             if (srv->log_handler != R_NilValue) R_ReleaseObject(srv->log_handler);
+            if (srv->auth_keys) free(srv->auth_keys);  // NEW: Free auth keys from struct
+            if (auth_keys_str) free(auth_keys_str);  // NEW: Free local auth keys string
             free(srv->dir); free(srv->addr); free(srv->prefix); free(srv->certfile); free(srv->keyfile); free(srv);
             error("Failed to start server thread");
         }
@@ -205,7 +234,9 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
         if (srv->log_handler != R_NilValue) R_ReleaseObject(srv->log_handler);
         if (srv->original_log_function != R_NilValue) R_ReleaseObject(srv->original_log_function);
         if (srv->log_file_path) free(srv->log_file_path);
+        if (srv->auth_keys) free(srv->auth_keys);  // NEW: Free auth keys
         free(srv->dir); free(srv->addr); free(srv->prefix); free(srv->certfile); free(srv->keyfile); free(srv);
+        if (auth_keys_str) free(auth_keys_str);  // NEW: Free local auth keys string
         return R_NilValue;
     } else {
         go_server_t* srv = (go_server_t*)calloc(1, sizeof(go_server_t));
@@ -226,6 +257,7 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
         srv->log_handler = R_NilValue;
         srv->original_log_function = R_NilValue;
         srv->log_file_path = NULL;
+        srv->auth_keys = auth_keys_str ? strdup(auth_keys_str) : NULL;  // NEW: Copy auth keys
         
         // Setup log handler based on parameters
         if (!silent) {
@@ -267,6 +299,7 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
         add_server(srv);
         SEXP extptr = PROTECT(R_MakeExternalPtr(srv, R_NilValue, R_NilValue));
         R_RegisterCFinalizerEx(extptr, go_server_finalizer, 1);
+        if (auth_keys_str) free(auth_keys_str);  // NEW: Free local auth keys string
         UNPROTECT(1);
         return extptr;
     }
@@ -291,7 +324,7 @@ SEXP list_servers() {
     for (int i = 0; i < MAX_SERVERS; ++i) {
         go_server_t* srv = server_list[i];
         if (srv && srv->running && k < active_count) {
-            SEXP info = PROTECT(allocVector(STRSXP, 8));
+            SEXP info = PROTECT(allocVector(STRSXP, 9)); // Changed from 8 to 9 for auth info
             SET_STRING_ELT(info, 0, mkChar(srv->dir));
             SET_STRING_ELT(info, 1, mkChar(srv->addr));
             SET_STRING_ELT(info, 2, mkChar(srv->prefix));
@@ -350,6 +383,13 @@ SEXP list_servers() {
             SET_STRING_ELT(info, 5, mkChar(log_handler_type));
             SET_STRING_ELT(info, 6, mkChar(log_destination));
             SET_STRING_ELT(info, 7, mkChar(log_function_info));
+            
+            // Add authentication information
+            const char* auth_status = "none";
+            if (srv->auth_keys != NULL && strlen(srv->auth_keys) > 0) {
+                auth_status = srv->auth_keys; // Show the actual keys (could be "enabled" for privacy)
+            }
+            SET_STRING_ELT(info, 8, mkChar(auth_status));
             
             SET_VECTOR_ELT(res, k++, info);
             UNPROTECT(1);

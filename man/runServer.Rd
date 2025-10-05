@@ -16,6 +16,7 @@ runServer(
   keyfile = "key.pem",
   silent = FALSE,
   log_handler = NULL,
+  auth_keys = c(),
   ...
 )
 }
@@ -41,6 +42,8 @@ runServer(
 \item{silent}{logical, suppress server logs}
 
 \item{log_handler}{function, custom log handler function(handler, message, user)}
+
+\item{auth_keys}{character vector of API keys for authentication. Default c() = no auth}
 
 \item{...}{additional arguments passed to the server}
 }
@@ -70,7 +73,7 @@ h <- runServer(
 # List all running background servers
 listServers()
 
-# Get a summary view  
+# Get a summary view
 summary(listServers())
 
 # Shutdown a background server

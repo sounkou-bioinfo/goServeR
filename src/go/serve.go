@@ -20,16 +20,18 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 //export RunServerWithLogging
-func RunServerWithLogging(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, cCoop, cTls, cSilent C.int, cCertFile, cKeyFile *C.char, shutdownFd, logFd C.int) {
+func RunServerWithLogging(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, cCoop, cTls, cSilent C.int, cCertFile, cKeyFile *C.char, shutdownFd, logFd C.int, cAuthKeys *C.char) {
 	dir := C.GoString(cDir)
 	addr := C.GoString(cAddr)
 	prefix := C.GoString(cPrefix)
 	certFile := C.GoString(cCertFile)
 	keyFile := C.GoString(cKeyFile)
+	authKeys := C.GoString(cAuthKeys) // NEW: Auth keys (comma-separated or empty)
 	cors := cCors != 0
 	coop := cCoop != 0
 	useTLS := cTls != 0
@@ -61,6 +63,12 @@ func RunServerWithLogging(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, c
 
 	mux := http.NewServeMux()
 	fileHandler := serveLogger(serveLog, http.FileServer(http.Dir(absDir)))
+
+	// Add auth middleware if auth keys are provided
+	if authKeys != "" {
+		fileHandler = authMiddleware(fileHandler, authKeys, serveLog)
+	}
+
 	if cors {
 		fileHandler = enableCORS(fileHandler)
 	}
@@ -167,6 +175,44 @@ func enableCORS(next http.Handler) http.Handler {
 func enableCOOP(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cross-Origin-Opener-Policy", "same-origin")
+		next.ServeHTTP(w, r)
+	})
+}
+
+// authMiddleware adds simple key-based authentication
+func authMiddleware(next http.Handler, validKeys string, logger *log.Logger) http.Handler {
+	// Parse comma-separated keys into a map for fast lookup
+	keyMap := make(map[string]bool)
+	if validKeys != "" {
+		for _, key := range strings.Split(validKeys, ",") {
+			key = strings.TrimSpace(key)
+			if key != "" {
+				keyMap[key] = true
+			}
+		}
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check auth key in header or query parameter
+		authKey := r.Header.Get("X-API-Key")
+		if authKey == "" {
+			authKey = r.URL.Query().Get("api_key")
+		}
+
+		// If no valid keys configured, allow access (no auth)
+		if len(keyMap) == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Check if provided key is valid
+		if authKey == "" || !keyMap[authKey] {
+			logger.Printf("Auth denied - invalid key from %s for %s", r.RemoteAddr, r.RequestURI)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		logger.Printf("Auth granted from %s for %s", r.RemoteAddr, r.RequestURI)
 		next.ServeHTTP(w, r)
 	})
 }

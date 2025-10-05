@@ -76,6 +76,73 @@ readLines(paste0("http://0.0.0.0:8080/", currentDir)) |>
 shutdownServer(h)
 ```
 
+### Authentication and TLS/HTTPS Support
+
+The package supports both API key authentication and TLS/HTTPS connections. You can use them separately or together for secure authenticated file serving:
+
+```{r auth_tls}
+
+# Get paths to example certificate and key files
+certfile <- system.file("extdata", "cert.pem", package = "goserveR")
+keyfile <- system.file("extdata", "key.pem", package = "goserveR")
+# write test file
+writeLines("Hello from goServeR!", "test.txt")
+
+# HTTP server with authentication
+h_http_auth <- runServer(dir = ".", addr = "127.0.0.1:8080", prefix = "/", blocking = FALSE, 
+                         auth_keys = c("secret123", "token456"), silent = TRUE)
+
+# Test authentication - wrong key should fail
+tryCatch({
+  download.file("http://127.0.0.1:8080/test.txt", 
+                destfile = tempfile(),
+                headers = c("X-API-Key" = "wrongkey"),
+                quiet = TRUE)
+}, error = function(e) {
+  cat("Authentication failed as expected\n")
+})
+
+# Test authentication - correct key should succeed
+temp_file <- tempfile()
+download.file("http://127.0.0.1:8080/test.txt", 
+              destfile = temp_file,
+              headers = c("X-API-Key" = "secret123"),
+              quiet = TRUE)
+
+readLines(temp_file)
+
+unlink(temp_file)
+
+# HTTPS server with authentication
+h_https_auth <- runServer(
+  dir = ".", 
+  addr = "127.0.0.1:8443", 
+  tls = TRUE,
+  prefix = "/",
+  certfile = certfile,
+  keyfile = keyfile,
+  auth_keys = c("secure_key_123"),
+  blocking = FALSE,
+  silent = TRUE
+)
+
+# Test HTTPS with authentication using download.file
+temp_file_https <- tempfile()
+download.file("https://127.0.0.1:8443/test.txt", 
+                destfile = temp_file_https,
+                headers = c("X-API-Key" = "secure_key_123"),
+                quiet = TRUE)
+
+readLines(temp_file_https)  
+
+listServers() |> str()
+
+# Cleanup
+shutdownServer(h_http_auth)
+shutdownServer(h_https_auth)
+unlink("test.txt")
+```
+
 ### Multiple Servers
 
 You can run multiple servers simultaneously on different ports:
@@ -102,49 +169,6 @@ length(readLines(paste0("http://127.0.0.1:8083/", normalizePath("."))))
 shutdownServer(h1)
 shutdownServer(h2)
 shutdownServer(h3)
-
-# Verify cleanup
-length(listServers())
-```
-
-### TLS/HTTPS Support
-
-The package includes support for TLS/HTTPS connections using certificate and key files. Example certificate and key files are provided in the package for testing purposes:
-
-```{r tls}
-# Get paths to example certificate and key files
-certfile <- system.file("extdata", "cert.pem", package = "goserveR")
-keyfile <- system.file("extdata", "key.pem", package = "goserveR")
-
-# Start an HTTPS server
-h_tls <- runServer(
-  dir = ".", 
-  addr = "127.0.0.1:8443", 
-  tls = TRUE,
-  certfile = certfile,
-  keyfile = keyfile,
-  blocking = FALSE,
-  silent = TRUE
-)
-
-# List servers to confirm it's running
-listServers() |> str()
-
-# Test the HTTPS server - we'll use system2 with curl since readLines
-# doesn't handle self-signed certificates well
-if (Sys.which("curl") != "") {
-  # Use curl with -k flag to accept self-signed certificate and -L to follow redirects
-  result <- system2("curl", 
-                   args = c("-k", "-s", "-L", paste0("https://127.0.0.1:8443/", normalizePath("."))),
-                   stdout = TRUE, stderr = TRUE)
-  cat("HTTPS server response (first 5 lines):\n")
-  cat(paste(head(result, 5), collapse = "\n"), "\n")
-} else {
-  cat("curl not available - HTTPS server is running but cannot test from R\n")
-}
-
-# Shutdown the TLS server
-shutdownServer(h_tls)
 
 # Verify cleanup
 length(listServers())
