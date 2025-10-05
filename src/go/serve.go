@@ -6,6 +6,11 @@
 // This code is in the public domain.
 // Contributor: Eli Bendersky (inspiration)
 
+// NOTE: CRAN check warnings about 'abort' and 'stderr' in compiled code:
+// These come from the Go runtime standard library, not from user code.
+// The Go HTTP server runs in a separate thread and all R session control
+// remains in C code. Go errors are handled gracefully without terminating R.
+
 package main
 
 /*

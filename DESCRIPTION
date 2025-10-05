@@ -1,16 +1,16 @@
 Package: goserveR
 Type: Package
-Title: HTTP(S) File Server With Range Requests And Unbounded CORS Using `Go`
+Title: HTTP(S) File Server with Range Requests and Unbounded CORS Using 'go'
 Version: 0.1.3
 Authors@R: c(
     person(given = c("Sounkou", "Mahamane"),
            family = "Toure", role = c("aut", "cre"), email = "sounkoutoure@gmail.com"),
     person(given = "Simon", family = "Urbanek", role = "cph", comment = "Background C code"))
-Description: goserveR provides a lightweight HTTP(S) file server implemented in Go and exposed to R. It supports range
+Description: Provides a lightweight HTTP(S) file server implemented in Go and exposed to R. It supports range
  requests, configurable CORS and COOP headers, and optional TLS. The package builds and runs a background server
  that can be cleanly shut down from R using an OS pipe and C/Go interop. Asynchronous log handling is also supported.
 License: GPL (>= 2)
-Depends: R (>= 4.4.1)
+Depends: R (>= 4.4.0)
 Imports: utils
 SystemRequirements: Go (https://golang.org), GNU make
 URL: https://github.com/sounkou-bioinfo/goServeR
