@@ -40,7 +40,7 @@ typedef struct {
     SEXP log_handler; // R external pointer to log handler
     SEXP original_log_function; // Store the original R log function
     char* log_file_path; // Store log file path if available
-    char* auth_keys; // NEW: Comma-separated auth keys (NULL = no auth)
+    char* auth_keys; // Comma-separated auth keys (NULL = no auth)
     // Add more fields as needed
 } go_server_t;
 

@@ -224,8 +224,8 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
             PIPE_CLOSE(shutdown_pipe);
             PIPE_CLOSE(log_pipe);
             if (srv->log_handler != R_NilValue) R_ReleaseObject(srv->log_handler);
-            if (srv->auth_keys) free(srv->auth_keys);  // NEW: Free auth keys from struct
-            if (auth_keys_str) free(auth_keys_str);  // NEW: Free local auth keys string
+            if (srv->auth_keys) free(srv->auth_keys);  // Free auth keys from struct
+            if (auth_keys_str) free(auth_keys_str);  // Free local auth keys string
             for (int i = 0; i < num_paths; i++) {
                 free(srv->dirs[i]); free(srv->prefixes[i]);
             }
