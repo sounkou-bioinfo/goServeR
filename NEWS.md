@@ -1,5 +1,15 @@
 # goserveR NEWS
 
+## goserveR 0.1.3
+
+- **MAJOR**: Added support for serving multiple directories from a single server instance. The `dir` and `prefix` parameters now accept character vectors of the same length, allowing one server to serve different directories at different URL prefixes.
+- **BREAKING CHANGE**: `dir` and `prefix` parameters now accept vectors instead of just single values (backward compatible for single values).
+- Enhanced server logging to show all registered directory/prefix pairs during startup.
+- Updated server listing to display multiple directories and prefixes in a comma-separated format.
+- Improved memory management for handling multiple directory/prefix arrays in C code.
+- Updated documentation with comprehensive examples of multiple directory serving.
+- All existing functionality remains backward compatible.
+
 ## goserveR 0.1.2-0.92000
 
 - **NEW**: Added API key authentication support via `auth_keys` parameter in `runServer()`. Users can now secure their file servers with API key authentication using the `X-API-Key` header.

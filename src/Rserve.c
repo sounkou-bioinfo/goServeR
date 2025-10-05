@@ -78,7 +78,7 @@ static void remove_server(go_server_t* srv) {
 // Thread entry for background server
 static void* server_thread_fn(void* arg) {
     go_server_t* srv = (go_server_t*)arg;
-    RunServerWithLogging(srv->dir, srv->addr, srv->prefix, srv->cors, srv->coop, srv->tls, srv->silent, srv->certfile, srv->keyfile, srv->shutdown_pipe[0], srv->log_pipe[1], srv->auth_keys);
+    RunServerWithLogging(srv->dirs, srv->addr, srv->prefixes, srv->num_paths, srv->cors, srv->coop, srv->tls, srv->silent, srv->certfile, srv->keyfile, srv->shutdown_pipe[0], srv->log_pipe[1], srv->auth_keys);
     
     // Safely update running status
     LOCK_SERVER_LIST();
@@ -89,10 +89,10 @@ static void* server_thread_fn(void* arg) {
 }
 
 SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_cors, SEXP r_coop, SEXP r_tls, SEXP r_certfile, SEXP r_keyfile, SEXP r_silent, SEXP r_log_handler, SEXP r_auth_keys) {
-    // Check that inputs are character vectors of length 1
-    if (TYPEOF(r_dir) != STRSXP || LENGTH(r_dir) != 1 ||
+    // Check that inputs are character vectors - now allowing vectors for dir and prefix
+    if (TYPEOF(r_dir) != STRSXP || LENGTH(r_dir) < 1 ||
         TYPEOF(r_addr) != STRSXP || LENGTH(r_addr) != 1 ||
-        TYPEOF(r_prefix) != STRSXP || LENGTH(r_prefix) != 1 ||
+        TYPEOF(r_prefix) != STRSXP || LENGTH(r_prefix) < 1 ||
         TYPEOF(r_blocking) != LGLSXP || LENGTH(r_blocking) != 1 ||
         TYPEOF(r_cors) != LGLSXP || LENGTH(r_cors) != 1 ||
         TYPEOF(r_coop) != LGLSXP || LENGTH(r_coop) != 1 ||
@@ -101,6 +101,11 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
         TYPEOF(r_keyfile) != STRSXP || LENGTH(r_keyfile) != 1 ||
         TYPEOF(r_silent) != LGLSXP || LENGTH(r_silent) != 1) {
         error("Arguments must be correct types");
+    }
+    
+    // Check that dir and prefix vectors have the same length
+    if (LENGTH(r_dir) != LENGTH(r_prefix)) {
+        error("dir and prefix vectors must have the same length");
     }
     
     // Validate log_handler: must be NULL or a function
@@ -113,9 +118,8 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
         error("auth_keys must be a character vector or NULL");
     }
     
-    const char* dir = CHAR(STRING_ELT(r_dir, 0));
+    int num_paths = LENGTH(r_dir);
     const char* addr = CHAR(STRING_ELT(r_addr, 0));
-    const char* prefix = CHAR(STRING_ELT(r_prefix, 0));
     int blocking = LOGICAL(r_blocking)[0];
     int cors = LOGICAL(r_cors)[0];
     int coop = LOGICAL(r_coop)[0];
@@ -156,9 +160,19 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
     }
     if (blocking) {
         go_server_t* srv = (go_server_t*)calloc(1, sizeof(go_server_t));
-        srv->dir = strdup(dir);
+        
+        // Allocate arrays for directories and prefixes
+        srv->dirs = (char**)malloc(num_paths * sizeof(char*));
+        srv->prefixes = (char**)malloc(num_paths * sizeof(char*));
+        srv->num_paths = num_paths;
+        
+        // Copy directories and prefixes
+        for (int i = 0; i < num_paths; i++) {
+            srv->dirs[i] = strdup(CHAR(STRING_ELT(r_dir, i)));
+            srv->prefixes[i] = strdup(CHAR(STRING_ELT(r_prefix, i)));
+        }
+        
         srv->addr = strdup(addr);
-        srv->prefix = strdup(prefix);
         srv->cors = cors;
         srv->coop = coop;
         srv->tls = tls;
@@ -211,13 +225,18 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
             if (srv->log_handler != R_NilValue) R_ReleaseObject(srv->log_handler);
             if (srv->auth_keys) free(srv->auth_keys);  // NEW: Free auth keys from struct
             if (auth_keys_str) free(auth_keys_str);  // NEW: Free local auth keys string
-            free(srv->dir); free(srv->addr); free(srv->prefix); free(srv->certfile); free(srv->keyfile); free(srv);
+            for (int i = 0; i < num_paths; i++) {
+                free(srv->dirs[i]); free(srv->prefixes[i]);
+            }
+            free(srv->dirs); free(srv->prefixes); free(srv->addr); free(srv->certfile); free(srv->keyfile); free(srv);
             error("Failed to start server thread");
         }
         Rprintf("Server started in blocking mode. Press Ctrl+C to interrupt.\n");
         Rprintf("Server address: %s\n", srv->addr);
-        Rprintf("Static files directory: %s\n", srv->dir);
-        Rprintf("URL prefix: %s\n", srv->prefix);
+        Rprintf("Static files directories: %d paths\n", srv->num_paths);
+        for (int i = 0; i < srv->num_paths; i++) {
+            Rprintf("  %d: %s -> %s\n", i+1, srv->dirs[i], srv->prefixes[i]);
+        }
         add_server(srv);
         while (srv->running) {
             if (pending_interrupt()) {
@@ -235,14 +254,27 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
         if (srv->original_log_function != R_NilValue) R_ReleaseObject(srv->original_log_function);
         if (srv->log_file_path) free(srv->log_file_path);
         if (srv->auth_keys) free(srv->auth_keys);  // NEW: Free auth keys
-        free(srv->dir); free(srv->addr); free(srv->prefix); free(srv->certfile); free(srv->keyfile); free(srv);
+        for (int i = 0; i < srv->num_paths; i++) {
+            free(srv->dirs[i]); free(srv->prefixes[i]);
+        }
+        free(srv->dirs); free(srv->prefixes); free(srv->addr); free(srv->certfile); free(srv->keyfile); free(srv);
         if (auth_keys_str) free(auth_keys_str);  // NEW: Free local auth keys string
         return R_NilValue;
     } else {
         go_server_t* srv = (go_server_t*)calloc(1, sizeof(go_server_t));
-        srv->dir = strdup(dir);
+        
+        // Allocate arrays for directories and prefixes
+        srv->dirs = (char**)malloc(num_paths * sizeof(char*));
+        srv->prefixes = (char**)malloc(num_paths * sizeof(char*));
+        srv->num_paths = num_paths;
+        
+        // Copy directories and prefixes
+        for (int i = 0; i < num_paths; i++) {
+            srv->dirs[i] = strdup(CHAR(STRING_ELT(r_dir, i)));
+            srv->prefixes[i] = strdup(CHAR(STRING_ELT(r_prefix, i)));
+        }
+        
         srv->addr = strdup(addr);
-        srv->prefix = strdup(prefix);
         srv->cors = cors;
         srv->coop = coop;
         srv->tls = tls;
@@ -293,7 +325,10 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
             PIPE_CLOSE(shutdown_pipe);
             PIPE_CLOSE(log_pipe);
             if (srv->log_handler != R_NilValue) R_ReleaseObject(srv->log_handler);
-            free(srv->dir); free(srv->addr); free(srv->prefix); free(srv->certfile); free(srv->keyfile); free(srv);
+            for (int i = 0; i < num_paths; i++) {
+                free(srv->dirs[i]); free(srv->prefixes[i]);
+            }
+            free(srv->dirs); free(srv->prefixes); free(srv->addr); free(srv->certfile); free(srv->keyfile); free(srv);
             error("Failed to start server thread");
         }
         add_server(srv);
@@ -323,13 +358,50 @@ SEXP list_servers() {
     // Second pass: collect server info
     for (int i = 0; i < MAX_SERVERS; ++i) {
         go_server_t* srv = server_list[i];
-        if (srv && srv->running && k < active_count) {
+        if (srv && srv->running && srv->dirs && srv->prefixes && srv->num_paths > 0 && k < active_count) {
             SEXP info = PROTECT(allocVector(STRSXP, 9)); // Changed from 8 to 9 for auth info
-            SET_STRING_ELT(info, 0, mkChar(srv->dir));
+            
+            // For multiple directories, combine them into a single string representation
+            // Calculate needed size first
+            int dirs_size = 1; // for null terminator
+            int prefixes_size = 1; // for null terminator
+            for (int j = 0; j < srv->num_paths; j++) {
+                if (srv->dirs[j] && srv->prefixes[j]) {
+                    dirs_size += strlen(srv->dirs[j]);
+                    prefixes_size += strlen(srv->prefixes[j]);
+                    if (j > 0) {
+                        dirs_size += 2; // for ", "
+                        prefixes_size += 2; // for ", "
+                    }
+                }
+            }
+            
+            // Allocate dynamic buffers
+            char* combined_dirs = (char*)malloc(dirs_size);
+            char* combined_prefixes = (char*)malloc(prefixes_size);
+            combined_dirs[0] = '\0';
+            combined_prefixes[0] = '\0';
+            
+            for (int j = 0; j < srv->num_paths; j++) {
+                if (srv->dirs[j] && srv->prefixes[j]) {
+                    if (j > 0) {
+                        strcat(combined_dirs, ", ");
+                        strcat(combined_prefixes, ", ");
+                    }
+                    strcat(combined_dirs, srv->dirs[j]);
+                    strcat(combined_prefixes, srv->prefixes[j]);
+                }
+            }
+            
+            SET_STRING_ELT(info, 0, mkChar(combined_dirs));
             SET_STRING_ELT(info, 1, mkChar(srv->addr));
-            SET_STRING_ELT(info, 2, mkChar(srv->prefix));
+            SET_STRING_ELT(info, 2, mkChar(combined_prefixes));
             SET_STRING_ELT(info, 3, mkChar(srv->tls ? "HTTPS" : "HTTP"));
             SET_STRING_ELT(info, 4, mkChar(srv->silent ? "silent" : "logging"));
+            
+            // Free the temporary buffers
+            free(combined_dirs);
+            free(combined_prefixes);
             
             // Extract actual log handler information
             const char* log_handler_type = "none";
@@ -469,7 +541,19 @@ void go_server_finalizer(SEXP extptr) {
     PIPE_CLOSE(srv->shutdown_pipe);
     PIPE_CLOSE(srv->log_pipe);
     if (srv->log_handler != R_NilValue) R_ReleaseObject(srv->log_handler);
-    free(srv->dir); free(srv->addr); free(srv->prefix); free(srv->certfile); free(srv->keyfile); free(srv);
+    if (srv->dirs && srv->prefixes) {
+        for (int i = 0; i < srv->num_paths; i++) {
+            if (srv->dirs[i]) free(srv->dirs[i]);
+            if (srv->prefixes[i]) free(srv->prefixes[i]);
+        }
+        free(srv->dirs);
+        free(srv->prefixes);
+    }
+    if (srv->addr) free(srv->addr);
+    if (srv->certfile) free(srv->certfile);
+    if (srv->keyfile) free(srv->keyfile);
+    if (srv->auth_keys) free(srv->auth_keys);
+    free(srv);
     R_ClearExternalPtr(extptr);
 }
 

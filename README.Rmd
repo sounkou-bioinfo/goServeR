@@ -174,6 +174,53 @@ shutdownServer(h3)
 length(listServers())
 ```
 
+### Multiple Directories from Single Server
+
+You can serve multiple directories from the same server instance by providing vectors of directories and prefixes:
+
+```{r multiple_dirs}
+# Create test directories
+dir.create("test_data", showWarnings = FALSE)
+dir.create("test_docs", showWarnings = FALSE)
+writeLines("Sample data content", "test_data/sample.txt")
+writeLines("Documentation content", "test_docs/doc.txt")
+
+# Start server with multiple directories
+h_multi <- runServer(
+    dir = c("test_data", "test_docs", "."),
+    prefix = c("/api/data", "/docs", "/files"),
+    addr = "127.0.0.1:8090",
+    blocking = FALSE,
+    silent = TRUE
+)
+
+# List server to see multiple directories
+listServers() |> str()
+
+# Access different endpoints
+# Data endpoint
+tryCatch({
+    data_content <- readLines("http://127.0.0.1:8090/api/data/sample.txt")
+    cat("Data content:", data_content, "\n")
+}, error = function(e) cat("Error:", e$message, "\n"))
+
+# Docs endpoint  
+tryCatch({
+    docs_content <- readLines("http://127.0.0.1:8090/docs/doc.txt")
+    cat("Docs content:", docs_content, "\n")
+}, error = function(e) cat("Error:", e$message, "\n"))
+
+# Files endpoint (current directory)
+tryCatch({
+    files_count <- length(readLines(paste0("http://127.0.0.1:8090/files/", normalizePath("."))))
+    cat("Files endpoint shows", files_count, "items\n")
+}, error = function(e) cat("Error:", e$message, "\n"))
+
+# Cleanup
+shutdownServer(h_multi)
+unlink(c("test_data", "test_docs"), recursive = TRUE)
+```
+
 ### Background Log Handling
 
 The package implements asynchronous log handling using R's async handling capabilities that was adapted from Simon Urbanek's [async callback pattern](https://github.com/s-u/background). Each server can have a custom log handler:

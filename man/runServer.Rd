@@ -21,11 +21,11 @@ runServer(
 )
 }
 \arguments{
-\item{dir}{directory to serve}
+\item{dir}{character vector of directories to serve}
 
 \item{addr}{address}
 
-\item{prefix}{server prefix}
+\item{prefix}{character vector of server prefixes (must have same length as dir)}
 
 \item{blocking}{logical, if FALSE runs in background and returns a handle}
 
@@ -60,6 +60,14 @@ Run the go http server (blocking or background)
 
 # Start a background server (returns a handle)
 h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE)
+
+# Start a server serving multiple directories
+h <- runServer(
+    dir = c("./data", "./docs", "."),
+    prefix = c("/api/data", "/docs", "/files"),
+    addr = "0.0.0.0:8080",
+    blocking = FALSE
+)
 
 # Start a server with custom log handler
 logfile <- tempfile("server_", fileext = ".log")

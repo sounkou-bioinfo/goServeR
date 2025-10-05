@@ -5,9 +5,9 @@ NULL
 #'
 #' Run the go http server (blocking or background)
 #'
-#' @param dir directory to serve
+#' @param dir character vector of directories to serve
 #' @param addr address
-#' @param prefix server prefix
+#' @param prefix character vector of server prefixes (must have same length as dir)
 #' @param blocking logical, if FALSE runs in background and returns a handle
 #' @param cors logical, enable CORS headers
 #' @param coop logical, enable COOP/COEP headers
@@ -28,6 +28,14 @@ NULL
 #'
 #' # Start a background server (returns a handle)
 #' h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE)
+#'
+#' # Start a server serving multiple directories
+#' h <- runServer(
+#'     dir = c("./data", "./docs", "."),
+#'     prefix = c("/api/data", "/docs", "/files"),
+#'     addr = "0.0.0.0:8080",
+#'     blocking = FALSE
+#' )
 #'
 #' # Start a server with custom log handler
 #' logfile <- tempfile("server_", fileext = ".log")
@@ -61,16 +69,21 @@ runServer <- function(
     log_handler = NULL,
     auth_keys = c(),
     ...) {
-    # Normalize path to prevent basic traversal
-    dir <- normalizePath(dir, winslash = "/", mustWork = TRUE)
+    # Normalize paths to prevent basic traversal
+    if (length(dir) == 1) {
+        dir <- normalizePath(dir, winslash = "/", mustWork = TRUE)
+    } else {
+        dir <- sapply(dir, function(d) normalizePath(d, winslash = "/", mustWork = TRUE), USE.NAMES = FALSE)
+    }
 
     # Validate input parameters
     stopifnot(
-        is.character(dir) && length(dir) == 1 && !is.na(dir) && dir != "",
-        dir.exists(dir),
+        is.character(dir) && length(dir) >= 1 && all(!is.na(dir)) && all(dir != ""),
+        all(sapply(dir, dir.exists)),
         is.character(addr) && length(addr) == 1 && !is.na(addr),
         grepl("^[^:]+:[0-9]+$", addr), # Check address format (host:port)
-        is.character(prefix) && length(prefix) == 1 && !is.na(prefix),
+        is.character(prefix) && length(prefix) >= 1 && all(!is.na(prefix)),
+        length(prefix) == length(dir), # dir and prefix must have same length
         is.logical(blocking) && length(blocking) == 1,
         is.logical(cors) && length(cors) == 1,
         is.logical(coop) && length(coop) == 1,
@@ -171,9 +184,9 @@ shutdownServer <- function(handle) {
 
 #' StartServer (advanced/manual use)
 #' Start a server (C-level, advanced)
-#' @param dir directory to serve
+#' @param dir character vector of directories to serve
 #' @param addr address
-#' @param prefix server prefix
+#' @param prefix character vector of server prefixes (must have same length as dir)
 #' @param blocking logical, if FALSE runs in background and returns a handle
 #' @param cors logical, enable CORS headers
 #' @param coop logical, enable COOP/COEP headers

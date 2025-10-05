@@ -28,7 +28,7 @@ if (interactive() || !nzchar(Sys.getenv("CI"))) {
         log_content <- readLines(logfile)
         expect_true(length(log_content) > 0, info = "Log file should have content")
         expect_true(any(grepl("\\[FILE\\]", log_content)), info = "Log should have custom prefix")
-        expect_true(any(grepl("Serving directory", log_content)), info = "Log should contain server startup message")
+        expect_true(any(grepl("Serving.*directories", log_content)), info = "Log should contain server startup message")
     }
 
     shutdownServer(h1)

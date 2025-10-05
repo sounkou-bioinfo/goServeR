@@ -22,13 +22,12 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unsafe"
 )
 
 //export RunServerWithLogging
-func RunServerWithLogging(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, cCoop, cTls, cSilent C.int, cCertFile, cKeyFile *C.char, shutdownFd, logFd C.int, cAuthKeys *C.char) {
-	dir := C.GoString(cDir)
+func RunServerWithLogging(cDirs **C.char, cAddr *C.char, cPrefixes **C.char, cNumPaths C.int, cCors, cCoop, cTls, cSilent C.int, cCertFile, cKeyFile *C.char, shutdownFd, logFd C.int, cAuthKeys *C.char) {
 	addr := C.GoString(cAddr)
-	prefix := C.GoString(cPrefix)
 	certFile := C.GoString(cCertFile)
 	keyFile := C.GoString(cKeyFile)
 	authKeys := C.GoString(cAuthKeys) // NEW: Auth keys (comma-separated or empty)
@@ -36,19 +35,38 @@ func RunServerWithLogging(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, c
 	coop := cCoop != 0
 	useTLS := cTls != 0
 	silent := cSilent != 0
+	numPaths := int(cNumPaths)
 
-	if dir == "" {
-		dir = "."
+	// Convert C arrays to Go slices
+	dirs := make([]string, numPaths)
+	prefixes := make([]string, numPaths)
+
+	// Extract directories and prefixes from C arrays
+	for i := 0; i < numPaths; i++ {
+		// Access array elements using pointer arithmetic
+		dirPtr := (**C.char)(unsafe.Pointer(uintptr(unsafe.Pointer(cDirs)) + uintptr(i)*unsafe.Sizeof(*cDirs)))
+		prefixPtr := (**C.char)(unsafe.Pointer(uintptr(unsafe.Pointer(cPrefixes)) + uintptr(i)*unsafe.Sizeof(*cPrefixes)))
+
+		dir := C.GoString(*dirPtr)
+		prefix := C.GoString(*prefixPtr)
+
+		if dir == "" {
+			dir = "."
+		}
+		absDir, err := filepath.Abs(dir)
+		if err != nil {
+			absDir = filepath.Clean(dir)
+		}
+		dirs[i] = absDir
+
+		if prefix == "" {
+			prefix = absDir
+		}
+		prefixes[i] = prefix
 	}
-	absDir, err := filepath.Abs(dir)
-	if err != nil {
-		absDir = filepath.Clean(dir)
-	}
+
 	if addr == "" {
 		addr = "0.0.0.0:8080"
-	}
-	if prefix == "" {
-		prefix = absDir
 	}
 
 	// Create logger that writes to the log pipe
@@ -62,25 +80,34 @@ func RunServerWithLogging(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, c
 	serveLog := log.New(logWriter, "", log.LstdFlags|log.Lmicroseconds)
 
 	mux := http.NewServeMux()
-	fileHandler := serveLogger(serveLog, http.FileServer(http.Dir(absDir)))
 
-	// Add auth middleware if auth keys are provided
-	if authKeys != "" {
-		fileHandler = authMiddleware(fileHandler, authKeys, serveLog)
-	}
+	// Register handlers for each directory/prefix pair
+	for i := 0; i < numPaths; i++ {
+		dir := dirs[i]
+		prefix := prefixes[i]
 
-	if cors {
-		fileHandler = enableCORS(fileHandler)
-	}
-	if coop {
-		fileHandler = enableCOOP(fileHandler)
-	}
+		fileHandler := serveLogger(serveLog, http.FileServer(http.Dir(dir)))
 
-	// Handle root prefix "/" properly
-	if prefix == "/" {
-		mux.Handle("/", fileHandler)
-	} else {
-		mux.Handle(prefix+"/", http.StripPrefix(prefix, fileHandler))
+		// Add auth middleware if auth keys are provided
+		if authKeys != "" {
+			fileHandler = authMiddleware(fileHandler, authKeys, serveLog)
+		}
+
+		if cors {
+			fileHandler = enableCORS(fileHandler)
+		}
+		if coop {
+			fileHandler = enableCOOP(fileHandler)
+		}
+
+		// Handle root prefix "/" properly
+		if prefix == "/" {
+			mux.Handle("/", fileHandler)
+		} else {
+			mux.Handle(prefix+"/", http.StripPrefix(prefix, fileHandler))
+		}
+
+		serveLog.Printf("Registered handler for directory %q at prefix %q", dir, prefix)
 	}
 
 	srv := &http.Server{
@@ -105,14 +132,18 @@ func RunServerWithLogging(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, c
 		}()
 
 		if useTLS {
-			serveLog.Printf("Serving directory %q on https://%v", dir, addr)
+			serveLog.Printf("Serving %d directories on https://%v", numPaths, addr)
+		} else {
+			serveLog.Printf("Serving %d directories on http://%v", numPaths, addr)
+		}
+
+		if useTLS {
 			if err := srv.ListenAndServeTLS(certFile, keyFile); err != http.ErrServerClosed {
 				serveLog.Printf("HTTPS server error: %v", err)
 				close(serverClosed)
 				return
 			}
 		} else {
-			serveLog.Printf("Serving directory %q on http://%v", dir, addr)
 			if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 				serveLog.Printf("HTTP server error: %v", err)
 				close(serverClosed)
@@ -135,9 +166,9 @@ func RunServerWithLogging(cDir *C.char, cAddr *C.char, cPrefix *C.char, cCors, c
 
 	select {
 	case <-done:
-		serveLog.Printf("Shutdown signal received—shutting down HTTP server at %s (prefix: %s)", addr, prefix)
+		serveLog.Printf("Shutdown signal received—shutting down HTTP server at %s", addr)
 	case <-serverClosed:
-		serveLog.Printf("Server closed due to error—shutting down HTTP server at %s (prefix: %s)", addr, prefix)
+		serveLog.Printf("Server closed due to error—shutting down HTTP server at %s", addr)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

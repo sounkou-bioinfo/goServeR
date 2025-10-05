@@ -68,8 +68,8 @@ setTimeLimit(elapsed = 5, transient = TRUE)
 runServer(dir = ".", addr = "0.0.0.0:8080", silent = TRUE)
 #> Server started in blocking mode. Press Ctrl+C to interrupt.
 #> Server address: 0.0.0.0:8080
-#> Static files directory: /home/sounkoutoure/Projects/goServeR
-#> URL prefix:
+#> Static files directories: 1 paths
+#>   1: /home/sounkoutoure/Projects/goServeR ->
 setTimeLimit()
 ```
 
@@ -284,6 +284,74 @@ length(listServers())
 #> [1] 0
 ```
 
+### Multiple Directories from Single Server
+
+You can serve multiple directories from the same server instance by
+providing vectors of directories and prefixes:
+
+``` r
+# Create test directories
+dir.create("test_data", showWarnings = FALSE)
+dir.create("test_docs", showWarnings = FALSE)
+writeLines("Sample data content", "test_data/sample.txt")
+writeLines("Documentation content", "test_docs/doc.txt")
+
+# Start server with multiple directories
+h_multi <- runServer(
+    dir = c("test_data", "test_docs", "."),
+    prefix = c("/api/data", "/docs", "/files"),
+    addr = "127.0.0.1:8090",
+    blocking = FALSE,
+    silent = TRUE
+)
+
+# List server to see multiple directories
+listServers() |> str()
+#> List of 1
+#>  $ :List of 10
+#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR/test_data, /home/sounkoutoure/Projects/goServeR/test_docs, /home/sounkouto"| __truncated__
+#>   ..$ address        : chr "127.0.0.1:8090"
+#>   ..$ prefix         : chr "/api/data, /docs, /files"
+#>   ..$ protocol       : chr "HTTP"
+#>   ..$ logging        : chr "silent"
+#>   ..$ log_handler    : chr "none"
+#>   ..$ log_destination: chr "none"
+#>   ..$ log_function   : chr "none"
+#>   ..$ authentication : chr "disabled"
+#>   ..$ auth_keys      : chr "none"
+#>   ..- attr(*, "class")= chr "server_info"
+#>  - attr(*, "class")= chr "server_list"
+
+# Access different endpoints
+# Data endpoint
+tryCatch({
+    data_content <- readLines("http://127.0.0.1:8090/api/data/sample.txt")
+    cat("Data content:", data_content, "\n")
+}, error = function(e) cat("Error:", e$message, "\n"))
+#> Data content: Sample data content
+
+# Docs endpoint  
+tryCatch({
+    docs_content <- readLines("http://127.0.0.1:8090/docs/doc.txt")
+    cat("Docs content:", docs_content, "\n")
+}, error = function(e) cat("Error:", e$message, "\n"))
+#> Docs content: Documentation content
+
+# Files endpoint (current directory)
+tryCatch({
+    files_count <- length(readLines(paste0("http://127.0.0.1:8090/files/", normalizePath("."))))
+    cat("Files endpoint shows", files_count, "items\n")
+}, error = function(e) cat("Error:", e$message, "\n"))
+#> Warning in file(con, "r"): cannot open URL
+#> 'http://127.0.0.1:8090/files/home/sounkoutoure/Projects/goServeR': HTTP status
+#> was '404 Not Found'
+#> Error: cannot open the connection to 'http://127.0.0.1:8090/files//home/sounkoutoure/Projects/goServeR'
+
+# Cleanup
+shutdownServer(h_multi)
+unlink(c("test_data", "test_docs"), recursive = TRUE)
+```
+
 ### Background Log Handling
 
 The package implements asynchronous log handling using R’s async
@@ -369,10 +437,12 @@ listServers() |> str()
 
 # let's get the log by making R idle !
 Sys.sleep(5)
-#> [goserveR] 2025/10/05 22:03:47.716025 Serving directory "/home/sounkoutoure/Projects/goServeR" on http://127.0.0.1:8350
+#> [goserveR] 2025/10/05 22:20:28.838402 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/05 22:20:28.838583 Serving 1 directories on http://127.0.0.1:8350
 #> 
-#> *** [CUSTOM-SERVER] *** 2025/10/05 22:03:47.724252 Serving directory "/home/sounkoutoure/Projects/goServeR" on http://127.0.0.1:8352
-#> 2025/10/05 22:03:47.725908 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:49468 370.204µs
+#> *** [CUSTOM-SERVER] *** 2025/10/05 22:20:28.844863 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/05 22:20:28.845005 Serving 1 directories on http://127.0.0.1:8352
+#> 2025/10/05 22:20:28.847112 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:48694 194.169µs
 #>  *** END ***
 shutdownServer(h1)
 shutdownServer(h2)
@@ -384,9 +454,9 @@ shutdownServer(h4)
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")
 }
-#> [2025-10-05 22:03:47] 2025/10/05 22:03:47.720229 Serving directory "/home/sounkoutoure/Projects/goServeR" on http://127.0.0.1:8351
-#> 2025/10/05 22:03:47.722150 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:55220 276.453µs
-#> 
+#> [2025-10-05 22:20:28] 2025/10/05 22:20:28.841279 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/05 22:20:28.841379 Serving 1 directories on http://127.0.0.1:8351
+#> 2025/10/05 22:20:28.842540 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:42546 162.929µs
 ```
 
 ## On background log handlers

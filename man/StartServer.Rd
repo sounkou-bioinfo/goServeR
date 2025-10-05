@@ -21,11 +21,11 @@ StartServer(
 )
 }
 \arguments{
-\item{dir}{directory to serve}
+\item{dir}{character vector of directories to serve}
 
 \item{addr}{address}
 
-\item{prefix}{server prefix}
+\item{prefix}{character vector of server prefixes (must have same length as dir)}
 
 \item{blocking}{logical, if FALSE runs in background and returns a handle}
 

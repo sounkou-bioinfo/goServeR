@@ -19,14 +19,15 @@
 
 // Go function, this is also available in serve.h
 // The declaration should match the one in serve.h
-void RunServerWithLogging(char* dir, char* addr, char* prefix, int cors, int coop, int tls, int silent, char* certfile, char* keyfile, int shutdown_fd, int log_fd, char* auth_keys);
+void RunServerWithLogging(char** dirs, char* addr, char** prefixes, int num_paths, int cors, int coop, int tls, int silent, char* certfile, char* keyfile, int shutdown_fd, int log_fd, char* auth_keys);
 
 // Struct to hold server state for background servers
 typedef struct {
     THREAD_TYPE thread; // Thread handle for background server
-    char* dir;
+    char** dirs;        // Array of directories to serve
     char* addr;
-    char* prefix;
+    char** prefixes;    // Array of prefixes corresponding to directories
+    int num_paths;      // Number of directory/prefix pairs
     int cors;
     int coop;
     int tls;
