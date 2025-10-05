@@ -59,6 +59,9 @@ runServer <- function(
     silent = FALSE,
     log_handler = NULL,
     ...) {
+    # Normalize path to prevent basic traversal
+    dir <- normalizePath(dir, winslash = "/", mustWork = TRUE)
+
     # Validate input parameters
     stopifnot(
         is.character(dir) && length(dir) == 1 && !is.na(dir) && dir != "",
