@@ -1,7 +1,7 @@
 Package: goserveR
 Type: Package
 Title: HTTP(S) File Server With Range Requests And Unbounded CORS Using `Go`
-Version: 0.1.2-0.91000
+Version: 0.1.2-0.92000
 Authors@R: c(
     person(given = c("Sounkou", "Mahamane"),
            family = "Toure", role = c("aut", "cre"), email = "sounkoutoure@gmail.com"),

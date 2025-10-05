@@ -1,5 +1,13 @@
 # goserveR NEWS
 
+## goserveR 0.1.2-0.92000
+
+- **NEW**: Added API key authentication support via `auth_keys` parameter in `runServer()`. Users can now secure their file servers with API key authentication using the `X-API-Key` header.
+- Authentication can be combined with TLS for secure, authenticated HTTPS file serving.
+- Enhanced security features for production-ready deployments.
+- Updated documentation with comprehensive authentication examples.
+- All authentication functionality is thoroughly tested and documented.
+
 ## goserveR 0.1.2-0.91000
 
 - **NEW**: Added custom log handler support via `log_handler` parameter in `runServer()`. Users can now provide custom functions to process server logs (e.g., file logging, custom formatting).
