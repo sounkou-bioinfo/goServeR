@@ -20,9 +20,9 @@ support range requests [as of
 now](https://github.com/rstudio/httpuv/issues/259)). This can be
 installed from
 [r-universe](https://sounkou-bioinfo.r-universe.dev/goserveR) and
-requires a go installation. We’ve added TLS support and other
-improvements since the initial version and we will add allowlisting and
-other security features in the future.
+requires a go installation. We’ve added TLS support, basic
+authentication layer and other improvements since the initial version
+and we will add allowlisting and other security features in the future.
 
 ## INSTALL
 
@@ -369,10 +369,10 @@ listServers() |> str()
 
 # let's get the log by making R idle !
 Sys.sleep(5)
-#> [goserveR] 2025/10/05 22:00:04.000677 Serving directory "/home/sounkoutoure/Projects/goServeR" on http://127.0.0.1:8350
+#> [goserveR] 2025/10/05 22:03:47.716025 Serving directory "/home/sounkoutoure/Projects/goServeR" on http://127.0.0.1:8350
 #> 
-#> *** [CUSTOM-SERVER] *** 2025/10/05 22:00:04.008046 Serving directory "/home/sounkoutoure/Projects/goServeR" on http://127.0.0.1:8352
-#> 2025/10/05 22:00:04.010492 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:54824 241.801µs
+#> *** [CUSTOM-SERVER] *** 2025/10/05 22:03:47.724252 Serving directory "/home/sounkoutoure/Projects/goServeR" on http://127.0.0.1:8352
+#> 2025/10/05 22:03:47.725908 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:49468 370.204µs
 #>  *** END ***
 shutdownServer(h1)
 shutdownServer(h2)
@@ -384,8 +384,8 @@ shutdownServer(h4)
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")
 }
-#> [2025-10-05 22:00:04] 2025/10/05 22:00:04.002869 Serving directory "/home/sounkoutoure/Projects/goServeR" on http://127.0.0.1:8351
-#> 2025/10/05 22:00:04.004369 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:46548 245.709µs
+#> [2025-10-05 22:03:47] 2025/10/05 22:03:47.720229 Serving directory "/home/sounkoutoure/Projects/goServeR" on http://127.0.0.1:8351
+#> 2025/10/05 22:03:47.722150 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:55220 276.453µs
 #> 
 ```
 
