@@ -312,7 +312,8 @@ openssl req -new -x509 -key server.key -out server.crt -days 365
 
 ## REFERENCES
 
-- <https://purrple.cat/blog/2017/05/14/calling-go-from-r/>
-- <https://mahowald.github.io/go-ffi/>
-- <https://cran.r-project.org/doc/manuals/r-devel/R-exts.pdf>
-- <https://github.com/eliben/static-server>
+- [Calling Go from R](https://purrple.cat/blog/2017/05/14/calling-go-from-r)
+- [Go FFI](https://mahowald.github.io/go-ffi/)
+- [Background C Code](https://github.com/s-u/background)
+- [R Extensions Manual](https://cran.r-project.org/doc/manuals/r-devel/R-exts.pdf)
+- [Go Static File Server](https://github.com/eliben/static-server)

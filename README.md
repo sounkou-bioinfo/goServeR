@@ -60,10 +60,10 @@ curl -L http://0.0.0.0:8080/${PWD} 2> /dev/null \
 sleep 2
 
 kill -9 $pid
-#> <pointer: 0x647e8295a3f0>
-#> [goserveR] 2025/10/06 21:21:39.290207 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> [goserveR] 2025/10/06 21:21:39.290366 Serving 1 directories on http://0.0.0.0:8080
-#> [goserveR] 2025/10/06 21:21:40.939696 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:52780 358.628µs
+#> <pointer: 0x61e8013ab3f0>
+#> [goserveR] 2025/10/07 00:44:35.236325 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> [goserveR] 2025/10/07 00:44:35.236513 Serving 1 directories on http://0.0.0.0:8080
+#> [goserveR] 2025/10/07 00:44:36.836935 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:40058 280.39µs
 #> <pre>
 #> <a href="..Rcheck/">..Rcheck/</a>
 #> <a href=".Rbuildignore">.Rbuildignore</a>
@@ -454,12 +454,12 @@ listServers() |> str()
 
 # let's get the log by making R idle !
 Sys.sleep(5)
-#> [goserveR] 2025/10/06 21:21:48.550482 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/06 21:21:48.550673 Serving 1 directories on http://127.0.0.1:8350
+#> [goserveR] 2025/10/07 00:44:44.470709 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/07 00:44:44.470971 Serving 1 directories on http://127.0.0.1:8350
 #> 
-#> *** [CUSTOM-SERVER] *** 2025/10/06 21:21:48.567365 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/06 21:21:48.567408 Serving 1 directories on http://127.0.0.1:8352
-#> 2025/10/06 21:21:48.568905 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:60064 160.373µs
+#> *** [CUSTOM-SERVER] *** 2025/10/07 00:44:44.486289 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/07 00:44:44.486339 Serving 1 directories on http://127.0.0.1:8352
+#> 2025/10/07 00:44:44.488487 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:40316 164.982µs
 #>  *** END ***
 shutdownServer(h1)
 shutdownServer(h2)
@@ -471,9 +471,9 @@ shutdownServer(h4)
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")
 }
-#> [2025-10-06 21:21:48] 2025/10/06 21:21:48.560691 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/06 21:21:48.560748 Serving 1 directories on http://127.0.0.1:8351
-#> 2025/10/06 21:21:48.563031 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:57706 339.812µs
+#> [2025-10-07 00:44:44] 2025/10/07 00:44:44.479875 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/07 00:44:44.479933 Serving 1 directories on http://127.0.0.1:8351
+#> 2025/10/07 00:44:44.482606 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:41250 191.502µs
 ```
 
 ## On background log handlers
@@ -531,7 +531,10 @@ openssl req -new -x509 -key server.key -out server.crt -days 365
 
 ## REFERENCES
 
-- <https://purrple.cat/blog/2017/05/14/calling-go-from-r/>
-- <https://mahowald.github.io/go-ffi/>
-- <https://cran.r-project.org/doc/manuals/r-devel/R-exts.pdf>
-- <https://github.com/eliben/static-server>
+- [Calling Go from
+  R](https://purrple.cat/blog/2017/05/14/calling-go-from-r)
+- [Go FFI](https://mahowald.github.io/go-ffi/)
+- [Background C Code](https://github.com/s-u/background)
+- [R Extensions
+  Manual](https://cran.r-project.org/doc/manuals/r-devel/R-exts.pdf)
+- [Go Static File Server](https://github.com/eliben/static-server)

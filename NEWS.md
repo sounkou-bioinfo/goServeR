@@ -1,8 +1,9 @@
 # goserveR NEWS
 
-## goserveR 0.1.3.9000 (development)
+## goserveR 0.1.3-0.90000 (development)
 
 - Dynamic authentication management functions (`addAuthKey()`, `removeAuthKey()`, `listAuthKeys()`) now work with the new server-based auth system.
+- Changed cph
 
 ## goserveR 0.1.3
 
