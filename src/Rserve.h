@@ -69,6 +69,9 @@ SEXP list_servers();
 // Shutdown a server given its external pointer
 SEXP shutdown_server(SEXP extptr);
 
+// Check if a server is running
+SEXP is_running(SEXP extptr);
+
 // Internal: finalizer for go_server_t external pointer
 void go_server_finalizer(SEXP extptr);
 

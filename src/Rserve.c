@@ -590,3 +590,17 @@ void go_server_finalizer(SEXP extptr) {
     R_ClearExternalPtr(extptr);
 }
 
+SEXP is_running(SEXP extptr) {
+    if (TYPEOF(extptr) != EXTPTRSXP) return ScalarLogical(0);
+    
+    go_server_t* srv = (go_server_t*)R_ExternalPtrAddr(extptr);
+    if (!srv) return ScalarLogical(0);
+    
+    // Thread-safe check of running status
+    LOCK_SERVER_LIST();
+    int running = srv->running;
+    UNLOCK_SERVER_LIST();
+    
+    return ScalarLogical(running);
+}
+

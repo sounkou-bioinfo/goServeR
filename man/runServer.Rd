@@ -19,6 +19,7 @@ runServer(
   auth_keys = c(),
   auth = FALSE,
   initial_keys = c(),
+  mustWork = FALSE,
   ...
 )
 }
@@ -50,6 +51,8 @@ runServer(
 \item{auth}{logical, enable dynamic authentication system (non-blocking mode only)}
 
 \item{initial_keys}{character vector of initial API keys for dynamic auth system}
+
+\item{mustWork}{logical, if TRUE and non-blocking, will check if server actually started and throw error if it failed (default FALSE for backward compatibility)}
 
 \item{...}{additional arguments passed to the server}
 }

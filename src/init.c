@@ -9,6 +9,7 @@
 SEXP run_server(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP list_servers();
 SEXP shutdown_server(SEXP);
+SEXP is_running(SEXP);
 SEXP register_log_handler(SEXP, SEXP, SEXP);
 SEXP remove_log_handler(SEXP);
 
@@ -27,6 +28,9 @@ SEXP RC_ListServers() {
 SEXP RC_ShutdownServer(SEXP extptr) {
     return shutdown_server(extptr);
 }
+SEXP RC_IsRunning(SEXP extptr) {
+    return is_running(extptr);
+}
 
 // Register the native routines
 static const R_CallMethodDef CallEntries[] = {
@@ -35,6 +39,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"RC_StartServer", (DL_FUNC) &RC_StartServer, 12},
     {"RC_ListServers", (DL_FUNC) &RC_ListServers, 0},
     {"RC_ShutdownServer", (DL_FUNC) &RC_ShutdownServer, 1},
+    {"RC_is_running", (DL_FUNC) &is_running, 1},
     {"RC_register_log_handler", (DL_FUNC) &register_log_handler, 3},
     {"RC_remove_log_handler", (DL_FUNC) &remove_log_handler, 1},
     {"RC_manage_server_auth", (DL_FUNC) &manage_server_auth, 3},

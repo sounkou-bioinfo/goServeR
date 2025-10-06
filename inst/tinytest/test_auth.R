@@ -25,8 +25,12 @@ server1 <- runServer(
     prefix = "/",
     blocking = FALSE,
     silent = TRUE,
-    auth_keys = c()
+    auth_keys = c(),
+    mustWork = TRUE # Ensure server actually starts
 )
+
+# Verify server is running
+expect_true(isRunning(server1), "Server should be running after start")
 # Helper function to wait for a server to be responsive
 
 if (Sys.which("curl") != "") {
@@ -44,6 +48,9 @@ if (Sys.which("curl") != "") {
 shutdownServer(server1)
 Sys.sleep(0.5) # Give time for shutdown
 
+# Verify server is no longer running
+expect_false(isRunning(server1), "Server should not be running after shutdown")
+
 # Test 2: Single auth key
 server2 <- runServer(
     dir = test_dir,
@@ -51,8 +58,12 @@ server2 <- runServer(
     prefix = "/",
     blocking = FALSE,
     silent = TRUE,
-    auth_keys = c("secret123")
+    auth_keys = c("secret123"),
+    mustWork = TRUE # Ensure server actually starts
 )
+
+# Verify server is running
+expect_true(isRunning(server2), "Auth server should be running after start")
 
 Sys.sleep(1) # Give server time to start
 # create test file
@@ -90,6 +101,9 @@ if (Sys.which("curl") != "") {
 
 shutdownServer(server2)
 Sys.sleep(0.5) # Give time for shutdown
+
+# Verify server is no longer running
+expect_false(isRunning(server2), "Auth server should not be running after shutdown")
 
 unlink(file.path(test_dir, "test.txt"))
 unlink("output.txt")

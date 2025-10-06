@@ -19,6 +19,7 @@ NULL
 #' @param auth_keys character vector of API keys for authentication. Default c() = no auth
 #' @param auth logical, enable dynamic authentication system (non-blocking mode only)
 #' @param initial_keys character vector of initial API keys for dynamic auth system
+#' @param mustWork logical, if TRUE and non-blocking, will check if server actually started and throw error if it failed (default FALSE for backward compatibility)
 #' @param ... additional arguments passed to the server
 #'
 #' @return NULL (if blocking) or an external pointer (if non-blocking)
@@ -90,6 +91,7 @@ runServer <- function(
     auth_keys = c(),
     auth = FALSE,
     initial_keys = c(),
+    mustWork = FALSE,
     ...) {
     # Normalize paths to prevent basic traversal
     if (length(dir) == 1) {
@@ -117,7 +119,8 @@ runServer <- function(
         is.character(certfile) && length(certfile) == 1,
         is.character(keyfile) && length(keyfile) == 1,
         is.logical(silent) && length(silent) == 1,
-        is.logical(auth) && length(auth) == 1
+        is.logical(auth) && length(auth) == 1,
+        is.logical(mustWork) && length(mustWork) == 1
     )
 
     # Validate auth parameters
@@ -219,6 +222,17 @@ runServer <- function(
             attr(server_handle, "auth") <- server_handle # Server handles its own auth now
         }
 
+        # Check if server actually started when mustWork = TRUE
+        if (mustWork && !blocking) {
+            # Give the server a moment to start
+            Sys.sleep(0.5)
+
+            # Check if server is actually running
+            if (!isRunning(server_handle)) {
+                stop("Server failed to start. Check address availability and permissions.")
+            }
+        }
+
         return(server_handle)
     }
 }
@@ -286,8 +300,18 @@ listServers <- function() {
                     log_destination <- "file (path in closure)"
                 }
 
-                # Format auth information
-                auth_status <- if (auth_keys_info == "none") "disabled" else "enabled"
+                # Format auth information - use the actual status from C code
+                auth_status <- auth_keys_info
+                if (auth_status == "none") {
+                    auth_status <- "disabled"
+                    key_summary <- "none"
+                } else if (auth_status %in% c("enabled", "configured")) {
+                    # Auth is enabled/configured, try to get key count if possible
+                    # For the auth_keys field, we'll show a summary rather than actual keys for security
+                    key_summary <- auth_status
+                } else {
+                    key_summary <- auth_status
+                }
 
                 # Create a more readable format
                 structure(
@@ -301,7 +325,7 @@ listServers <- function() {
                         log_destination = log_destination,
                         log_function = log_function_info,
                         authentication = auth_status,
-                        auth_keys = auth_keys_info
+                        auth_keys = key_summary
                     ),
                     class = "server_info"
                 )
@@ -332,6 +356,25 @@ listServers <- function() {
 #' @export
 shutdownServer <- function(handle) {
     invisible(.Call(RC_shutdown_server, handle))
+}
+
+#' isRunning
+#' Check if a background server is still running
+#' @param handle external pointer returned by runServer(blocking=FALSE)
+#' @return logical, TRUE if server is running, FALSE otherwise
+#' @export
+#' @examples
+#' \dontrun{
+#' h <- runServer(dir = ".", addr = "127.0.0.1:8080", blocking = FALSE)
+#' isRunning(h) # TRUE
+#' shutdownServer(h)
+#' isRunning(h) # FALSE
+#' }
+isRunning <- function(handle) {
+    if (!inherits(handle, "externalptr")) {
+        return(FALSE)
+    }
+    .Call(RC_is_running, handle)
 }
 
 #' StartServer (advanced/manual use)
