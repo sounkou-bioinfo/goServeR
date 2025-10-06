@@ -1,5 +1,9 @@
 # goserveR NEWS
 
+## goserveR 0.1.3.9000 (development)
+
+- Dynamic authentication management functions (`addAuthKey()`, `removeAuthKey()`, `listAuthKeys()`) now work with the new server-based auth system.
+
 ## goserveR 0.1.3
 
 - **MAJOR**: Added support for serving multiple directories from a single server instance. The `dir` and `prefix` parameters now accept character vectors of the same length, allowing one server to serve different directories at different URL prefixes.
