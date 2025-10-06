@@ -9,11 +9,11 @@ writeLines("Test content for auth", test_file)
 
 # Test 1: Create server with auth system
 server <- runServer(
-    dir = temp_dir,
-    addr = "127.0.0.1:8193",
-    blocking = FALSE,
-    auth = TRUE,
-    initial_keys = c("test_key_1", "test_key_2", "secret_123")
+  dir = temp_dir,
+  addr = "127.0.0.1:8193",
+  blocking = FALSE,
+  auth = TRUE,
+  initial_keys = c("test_key_1", "test_key_2", "secret_123")
 )
 expect_true(inherits(server, "externalptr"))
 
@@ -71,10 +71,10 @@ expect_error(clearAuthKeys())
 
 # Test 10: Integration test - create server without auth, should error
 server_no_auth <- runServer(
-    dir = temp_dir,
-    addr = "127.0.0.1:8194",
-    blocking = FALSE,
-    auth = FALSE
+  dir = temp_dir,
+  addr = "127.0.0.1:8194",
+  blocking = FALSE,
+  auth = FALSE
 )
 expect_error(addAuthKey(server_no_auth, "key"))
 expect_error(listAuthKeys(server_no_auth))
