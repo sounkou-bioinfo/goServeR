@@ -96,11 +96,11 @@ runServer <- function(
 ) {
   # Normalize paths to prevent basic traversal
   if (length(dir) == 1) {
-    dir <- normalizePath(dir, winslash = "/", mustWork = TRUE)
+    dir <- normalizePath(dir, mustWork = TRUE)
   } else {
     dir <- sapply(
       dir,
-      function(d) normalizePath(d, winslash = "/", mustWork = TRUE),
+      function(d) normalizePath(d, mustWork = TRUE),
       USE.NAMES = FALSE
     )
   }
