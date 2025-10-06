@@ -17,6 +17,8 @@ runServer(
   silent = FALSE,
   log_handler = NULL,
   auth_keys = c(),
+  auth = FALSE,
+  initial_keys = c(),
   ...
 )
 }
@@ -45,6 +47,10 @@ runServer(
 
 \item{auth_keys}{character vector of API keys for authentication. Default c() = no auth}
 
+\item{auth}{logical, enable dynamic authentication system (non-blocking mode only)}
+
+\item{initial_keys}{character vector of initial API keys for dynamic auth system}
+
 \item{...}{additional arguments passed to the server}
 }
 \value{
@@ -60,6 +66,24 @@ Run the go http server (blocking or background)
 
 # Start a background server (returns a handle)
 h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE)
+
+# Start a server with static auth keys (backward compatible)
+h <- runServer(
+    dir = ".", addr = "0.0.0.0:8080", blocking = FALSE,
+    auth_keys = c("secret123", "token456")
+)
+
+# Start a server with dynamic auth system
+h <- runServer(
+    dir = ".", addr = "0.0.0.0:8080", blocking = FALSE,
+    auth = TRUE, initial_keys = c("secret123")
+)
+
+# Manage auth keys dynamically (only with auth=TRUE)
+auth <- attr(h, "auth")
+addAuthKey(auth, "new_key_456")
+removeAuthKey(auth, "secret123")
+listAuthKeys(auth)
 
 # Start a server serving multiple directories
 h <- runServer(

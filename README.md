@@ -60,10 +60,10 @@ curl -L http://0.0.0.0:8080/${PWD} 2> /dev/null \
 sleep 2
 
 kill -9 $pid
-#> <pointer: 0x5d6fee7453f0>
-#> [goserveR] 2025/10/05 23:53:50.528607 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> [goserveR] 2025/10/05 23:53:50.528847 Serving 1 directories on http://0.0.0.0:8080
-#> [goserveR] 2025/10/05 23:53:52.234943 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:52570 285.008µs
+#> <pointer: 0x5d3886c50400>
+#> [goserveR] 2025/10/06 21:04:34.588357 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> [goserveR] 2025/10/06 21:04:34.588709 Serving 1 directories on http://0.0.0.0:8080
+#> [goserveR] 2025/10/06 21:04:36.273467 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:47734 344.901µs
 #> <pre>
 #> <a href="..Rcheck/">..Rcheck/</a>
 #> <a href=".Rbuildignore">.Rbuildignore</a>
@@ -125,7 +125,8 @@ shutdownServer(h)
 
 The package supports both API key authentication and TLS/HTTPS
 connections. You can use them separately or together for secure
-authenticated file serving:
+authenticated file serving. You can also add or remove authentication
+keys at runtime using `addAuthKey()` and `removeAuthKey()` functions.
 
 ``` r
 
@@ -136,30 +137,26 @@ keyfile <- system.file("extdata", "key.pem", package = "goserveR")
 writeLines("Hello from goServeR!", "test.txt")
 
 # HTTP server with authentication
-h_http_auth <- runServer(dir = ".", addr = "127.0.0.1:8080", prefix = "/", blocking = FALSE, 
+h_http_auth <- runServer(dir = ".", addr = "127.0.0.1:8090", prefix = "/", blocking = FALSE, 
                          auth_keys = c("secret123", "token456"), silent = TRUE)
 
-# Test authentication - wrong key should fail
-tryCatch({
-  download.file("http://127.0.0.1:8080/test.txt", 
-                destfile = tempfile(),
-                headers = c("X-API-Key" = "wrongkey"),
-                quiet = TRUE)
-}, error = function(e) {
-  cat("Authentication failed as expected\n")
-})
-#> Warning in download.file("http://127.0.0.1:8080/test.txt", destfile =
-#> tempfile(), : downloaded length 0 != reported length 13
-#> Warning in download.file("http://127.0.0.1:8080/test.txt", destfile =
-#> tempfile(), : cannot open URL 'http://127.0.0.1:8080/test.txt': HTTP status was
-#> '401 Unauthorized'
-#> Authentication failed as expected
-
+length(listServers())
+#> [1] 1
 # Test authentication - correct key should succeed
 temp_file <- tempfile()
-download.file("http://127.0.0.1:8080/test.txt", 
+download.file("http://127.0.0.1:8090/test.txt", 
               destfile = temp_file,
               headers = c("X-API-Key" = "secret123"),
+              quiet = TRUE)
+
+
+readLines(temp_file)
+#> [1] "Hello from goServeR!"
+addAuthKey(h_http_auth, "newkey789")
+# Test with new key
+download.file("http://127.0.0.1:8090/test.txt", 
+              destfile = temp_file,
+              headers = c("X-API-Key" = "newkey789"),
               quiet = TRUE)
 
 readLines(temp_file)
@@ -170,7 +167,7 @@ unlink(temp_file)
 # HTTPS server with authentication
 h_https_auth <- runServer(
   dir = ".", 
-  addr = "127.0.0.1:8443", 
+  addr = "127.0.0.1:8444", 
   tls = TRUE,
   prefix = "/",
   certfile = certfile,
@@ -180,41 +177,45 @@ h_https_auth <- runServer(
   silent = TRUE
 )
 
-# Test HTTPS with authentication using download.file
+# Give HTTPS server time to start up and verify it's running
+length(listServers())
+#> [1] 2
+# Test HTTPS with authentication
 temp_file_https <- tempfile()
-download.file("https://127.0.0.1:8443/test.txt", 
+
+download.file("https://127.0.0.1:8444/test.txt", 
                 destfile = temp_file_https,
                 headers = c("X-API-Key" = "secure_key_123"),
                 quiet = TRUE)
-
-readLines(temp_file_https)  
+  
+readLines(temp_file_https) 
 #> [1] "Hello from goServeR!"
 
 listServers() |> str()
 #> List of 2
 #>  $ :List of 10
 #>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
-#>   ..$ address        : chr "127.0.0.1:8080"
+#>   ..$ address        : chr "127.0.0.1:8090"
 #>   ..$ prefix         : chr "/"
 #>   ..$ protocol       : chr "HTTP"
 #>   ..$ logging        : chr "silent"
 #>   ..$ log_handler    : chr "none"
 #>   ..$ log_destination: chr "none"
 #>   ..$ log_function   : chr "none"
-#>   ..$ authentication : chr "enabled"
-#>   ..$ auth_keys      : chr "secret123,token456"
+#>   ..$ authentication : chr "disabled"
+#>   ..$ auth_keys      : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
 #>  $ :List of 10
 #>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
-#>   ..$ address        : chr "127.0.0.1:8443"
+#>   ..$ address        : chr "127.0.0.1:8444"
 #>   ..$ prefix         : chr "/"
 #>   ..$ protocol       : chr "HTTPS"
 #>   ..$ logging        : chr "silent"
 #>   ..$ log_handler    : chr "none"
 #>   ..$ log_destination: chr "none"
 #>   ..$ log_function   : chr "none"
-#>   ..$ authentication : chr "enabled"
-#>   ..$ auth_keys      : chr "secure_key_123"
+#>   ..$ authentication : chr "disabled"
+#>   ..$ auth_keys      : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
 #>  - attr(*, "class")= chr "server_list"
 
@@ -279,13 +280,13 @@ listServers() |> str()
 
 #Server 1 (port 8081) 
 length(readLines(paste0("http://127.0.0.1:8081/", normalizePath("."))))
-#> [1] 26
+#> [1] 29
 #Server 2 (port 8082)
 length(readLines(paste0("http://127.0.0.1:8082/", normalizePath("."))))
-#> [1] 26
+#> [1] 29
 #Server 3 (port 8083)
 length(readLines(paste0("http://127.0.0.1:8083/", normalizePath("."))))
-#> [1] 26
+#> [1] 29
 
 # Shutdown all servers
 shutdownServer(h1)
@@ -346,7 +347,7 @@ readLines("http://127.0.0.1:8090/docs/doc.txt")
 
 # Files endpoint (current directory)
 length(readLines(paste0("http://127.0.0.1:8090/files/")))
-#> [1] 28
+#> [1] 31
 # Cleanup
 shutdownServer(h_multi)
 unlink(c("test_data", "test_docs"), recursive = TRUE)
@@ -437,12 +438,12 @@ listServers() |> str()
 
 # let's get the log by making R idle !
 Sys.sleep(5)
-#> [goserveR] 2025/10/05 23:53:59.581770 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/05 23:53:59.581903 Serving 1 directories on http://127.0.0.1:8350
+#> [goserveR] 2025/10/06 21:04:43.867523 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/06 21:04:43.867824 Serving 1 directories on http://127.0.0.1:8350
 #> 
-#> *** [CUSTOM-SERVER] *** 2025/10/05 23:53:59.591691 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/05 23:53:59.591739 Serving 1 directories on http://127.0.0.1:8352
-#> 2025/10/05 23:53:59.593525 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:53460 156.064µs
+#> *** [CUSTOM-SERVER] *** 2025/10/06 21:04:43.875553 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/06 21:04:43.875663 Serving 1 directories on http://127.0.0.1:8352
+#> 2025/10/06 21:04:43.877814 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:42012 310.425µs
 #>  *** END ***
 shutdownServer(h1)
 shutdownServer(h2)
@@ -454,9 +455,9 @@ shutdownServer(h4)
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")
 }
-#> [2025-10-05 23:53:59] 2025/10/05 23:53:59.585175 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/05 23:53:59.585260 Serving 1 directories on http://127.0.0.1:8351
-#> 2025/10/05 23:53:59.587951 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:41166 335.353µs
+#> [2025-10-06 21:04:43] 2025/10/06 21:04:43.870699 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/06 21:04:43.870744 Serving 1 directories on http://127.0.0.1:8351
+#> 2025/10/06 21:04:43.872717 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:38084 267.234µs
 ```
 
 ## On background log handlers

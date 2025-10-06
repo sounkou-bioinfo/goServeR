@@ -18,6 +18,7 @@ package main
 */
 import "C"
 import (
+	"bufio"
 	"context"
 	"crypto/tls"
 	"io"
@@ -26,12 +27,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 	"unsafe"
 )
 
 //export RunServerWithLogging
-func RunServerWithLogging(cDirs **C.char, cAddr *C.char, cPrefixes **C.char, cNumPaths C.int, cCors, cCoop, cTls, cSilent C.int, cCertFile, cKeyFile *C.char, shutdownFd, logFd C.int, cAuthKeys *C.char) {
+func RunServerWithLogging(cDirs **C.char, cAddr *C.char, cPrefixes **C.char, cNumPaths C.int, cCors, cCoop, cTls, cSilent C.int, cCertFile, cKeyFile *C.char, shutdownFd, logFd C.int, cAuthKeys *C.char, authPipeFd C.int) {
 	addr := C.GoString(cAddr)
 	certFile := C.GoString(cCertFile)
 	keyFile := C.GoString(cKeyFile)
@@ -41,6 +43,12 @@ func RunServerWithLogging(cDirs **C.char, cAddr *C.char, cPrefixes **C.char, cNu
 	useTLS := cTls != 0
 	silent := cSilent != 0
 	numPaths := int(cNumPaths)
+
+	// Create per-server auth manager (not global!)
+	var serverAuth *PipeAuthManager
+	if authPipeFd >= 0 {
+		serverAuth = NewPipeAuthManager(int(authPipeFd))
+	}
 
 	// Convert C arrays to Go slices
 	dirs := make([]string, numPaths)
@@ -93,9 +101,9 @@ func RunServerWithLogging(cDirs **C.char, cAddr *C.char, cPrefixes **C.char, cNu
 
 		fileHandler := serveLogger(serveLog, http.FileServer(http.Dir(dir)))
 
-		// Add auth middleware if auth keys are provided
-		if authKeys != "" {
-			fileHandler = authMiddleware(fileHandler, authKeys, serveLog)
+		// Add auth middleware if auth keys are provided or auth pipe exists
+		if authKeys != "" || serverAuth != nil {
+			fileHandler = authMiddleware(fileHandler, authKeys, serveLog, serverAuth)
 		}
 
 		if cors {
@@ -180,6 +188,11 @@ func RunServerWithLogging(cDirs **C.char, cAddr *C.char, cPrefixes **C.char, cNu
 	defer cancel()
 	_ = srv.Shutdown(ctx)
 	<-serverClosed
+
+	// Clean up per-server auth (not global!)
+	if serverAuth != nil {
+		serverAuth.close()
+	}
 }
 
 // serveLogger logs HTTP requests to the given logger
@@ -215,19 +228,8 @@ func enableCOOP(next http.Handler) http.Handler {
 	})
 }
 
-// authMiddleware adds simple key-based authentication
-func authMiddleware(next http.Handler, validKeys string, logger *log.Logger) http.Handler {
-	// Parse comma-separated keys into a map for fast lookup
-	keyMap := make(map[string]bool)
-	if validKeys != "" {
-		for _, key := range strings.Split(validKeys, ",") {
-			key = strings.TrimSpace(key)
-			if key != "" {
-				keyMap[key] = true
-			}
-		}
-	}
-
+// authMiddleware adds pipe-based authentication
+func authMiddleware(next http.Handler, validKeys string, logger *log.Logger, pipeAuth *PipeAuthManager) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check auth key in header or query parameter
 		authKey := r.Header.Get("X-API-Key")
@@ -235,23 +237,114 @@ func authMiddleware(next http.Handler, validKeys string, logger *log.Logger) htt
 			authKey = r.URL.Query().Get("api_key")
 		}
 
-		// If no valid keys configured, allow access (no auth)
-		if len(keyMap) == 0 {
+		// If no pipe auth manager and no static keys, allow access (no auth)
+		if pipeAuth == nil && validKeys == "" {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		// Check if provided key is valid
-		if authKey == "" || !keyMap[authKey] {
-			logger.Printf("Auth denied - invalid key from %s for %s", r.RemoteAddr, r.RequestURI)
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		// Check pipe-based auth first (if available)
+		if pipeAuth != nil && authKey != "" && pipeAuth.isValidKey(authKey) {
+			logger.Printf("Auth granted (pipe) from %s for %s", r.RemoteAddr, r.RequestURI)
+			next.ServeHTTP(w, r)
 			return
 		}
 
-		logger.Printf("Auth granted from %s for %s", r.RemoteAddr, r.RequestURI)
-		next.ServeHTTP(w, r)
+		// Fall back to static keys (backward compatibility)
+		if validKeys != "" && authKey != "" {
+			for _, validKey := range strings.Split(validKeys, ",") {
+				if strings.TrimSpace(validKey) == authKey {
+					logger.Printf("Auth granted (static) from %s for %s", r.RemoteAddr, r.RequestURI)
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+		}
+
+		logger.Printf("Auth denied - invalid key from %s for %s", r.RemoteAddr, r.RequestURI)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 	})
 }
 
+// Pipe-based authentication manager
+type PipeAuthManager struct {
+	keys     map[string]bool
+	mutex    sync.RWMutex
+	authPipe *os.File
+	done     chan bool
+}
+
+func NewPipeAuthManager(pipeFd int) *PipeAuthManager {
+	if pipeFd < 0 {
+		return nil // No pipe auth
+	}
+
+	pam := &PipeAuthManager{
+		keys:     make(map[string]bool),
+		done:     make(chan bool),
+		authPipe: os.NewFile(uintptr(pipeFd), "auth_pipe"),
+	}
+
+	go pam.listenForCommands()
+	return pam
+}
+
+func (pam *PipeAuthManager) listenForCommands() {
+	if pam.authPipe == nil {
+		return
+	}
+
+	scanner := bufio.NewScanner(pam.authPipe)
+	for scanner.Scan() {
+		select {
+		case <-pam.done:
+			return
+		default:
+			cmd := strings.TrimSpace(scanner.Text())
+			pam.processCommand(cmd)
+		}
+	}
+}
+
+func (pam *PipeAuthManager) processCommand(cmd string) {
+	parts := strings.SplitN(cmd, ":", 2)
+	if len(parts) != 2 {
+		return
+	}
+
+	action, key := parts[0], parts[1]
+
+	pam.mutex.Lock()
+	defer pam.mutex.Unlock()
+
+	switch action {
+	case "ADD":
+		pam.keys[key] = true
+	case "REMOVE":
+		delete(pam.keys, key)
+	case "CLEAR":
+		pam.keys = make(map[string]bool)
+	}
+}
+
+func (pam *PipeAuthManager) isValidKey(key string) bool {
+	if pam == nil {
+		return false
+	}
+	pam.mutex.RLock()
+	defer pam.mutex.RUnlock()
+	return pam.keys[key]
+}
+
+func (pam *PipeAuthManager) close() {
+	if pam != nil {
+		close(pam.done)
+		if pam.authPipe != nil {
+			pam.authPipe.Close()
+		}
+	}
+}
+
 // Only run main when building as a standalone binary, not as a shared library for R
-func main() {}
+func main() {
+}

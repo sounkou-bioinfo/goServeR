@@ -75,10 +75,15 @@ static void remove_server(go_server_t* srv) {
     UNLOCK_SERVER_LIST();
 }
 
-// Thread entry for background server
 static void* server_thread_fn(void* arg) {
     go_server_t* srv = (go_server_t*)arg;
-    RunServerWithLogging(srv->dirs, srv->addr, srv->prefixes, srv->num_paths, srv->cors, srv->coop, srv->tls, srv->silent, srv->certfile, srv->keyfile, srv->shutdown_pipe[0], srv->log_pipe[1], srv->auth_keys);
+    
+    // Pass auth pipe FD if auth context exists, otherwise -1
+    int auth_pipe_fd = (srv->auth_context) ? srv->auth_context->auth_pipe_fd : -1;
+    
+    // For backward compatibility, pass empty string for auth_keys
+    // Auth is now handled via pipe-based system per server
+    RunServerWithLogging(srv->dirs, srv->addr, srv->prefixes, srv->num_paths, srv->cors, srv->coop, srv->tls, srv->silent, srv->certfile, srv->keyfile, srv->shutdown_pipe[0], srv->log_pipe[1], "", auth_pipe_fd);
     
     // Safely update running status
     LOCK_SERVER_LIST();
@@ -187,7 +192,12 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
         srv->log_handler = R_NilValue;
         srv->original_log_function = R_NilValue;
         srv->log_file_path = NULL;
-        srv->auth_keys = auth_keys_str ? strdup(auth_keys_str) : NULL;  // NEW: Copy auth keys
+        srv->auth_context = NULL;  // NEW: Initialize auth context to NULL
+        
+        // Create auth context if auth keys are provided (for compatibility)
+        if (auth_keys_str && strlen(auth_keys_str) > 0) {
+            srv->auth_context = create_server_auth_context();
+        }
         
         // Setup log handler based on parameters
         if (!silent) {
@@ -224,7 +234,7 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
             PIPE_CLOSE(shutdown_pipe);
             PIPE_CLOSE(log_pipe);
             if (srv->log_handler != R_NilValue) R_ReleaseObject(srv->log_handler);
-            if (srv->auth_keys) free(srv->auth_keys);  // Free auth keys from struct
+            // Auth context cleanup is handled by finalizer  // Free auth keys from struct
             if (auth_keys_str) free(auth_keys_str);  // Free local auth keys string
             for (int i = 0; i < num_paths; i++) {
                 free(srv->dirs[i]); free(srv->prefixes[i]);
@@ -254,7 +264,7 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
         if (srv->log_handler != R_NilValue) R_ReleaseObject(srv->log_handler);
         if (srv->original_log_function != R_NilValue) R_ReleaseObject(srv->original_log_function);
         if (srv->log_file_path) free(srv->log_file_path);
-        if (srv->auth_keys) free(srv->auth_keys);  // NEW: Free auth keys
+        // Auth context cleanup is handled by finalizer  // NEW: Free auth keys
         for (int i = 0; i < srv->num_paths; i++) {
             free(srv->dirs[i]); free(srv->prefixes[i]);
         }
@@ -290,7 +300,12 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
         srv->log_handler = R_NilValue;
         srv->original_log_function = R_NilValue;
         srv->log_file_path = NULL;
-        srv->auth_keys = auth_keys_str ? strdup(auth_keys_str) : NULL;  // NEW: Copy auth keys
+        srv->auth_context = NULL;  // NEW: Initialize auth context to NULL
+        
+        // Create auth context if auth keys are provided (for compatibility)
+        if (auth_keys_str && strlen(auth_keys_str) > 0) {
+            srv->auth_context = create_server_auth_context();
+        }
         
         // Setup log handler based on parameters
         if (!silent) {
@@ -361,7 +376,10 @@ SEXP list_servers() {
     // Second pass: collect server info
     for (int i = 0; i < MAX_SERVERS; ++i) {
         go_server_t* srv = server_list[i];
-        if (srv && srv->running && srv->dirs && srv->prefixes && srv->num_paths > 0 && k < active_count) {
+        if (srv && srv->running && srv->dirs && srv->prefixes && srv->addr && srv->num_paths > 0 && k < active_count) {
+            // Double-check server is still valid before accessing its members
+            if (!srv->running) continue; // Skip if shutdown during iteration
+            
             SEXP info = PROTECT(allocVector(STRSXP, 9)); // Changed from 8 to 9 for auth info
             
             // For multiple directories, combine them into a single string representation
@@ -411,13 +429,14 @@ SEXP list_servers() {
             const char* log_destination = "none";
             const char* log_function_info = "none";
             
-            if (!srv->silent) {
+            if (!srv->silent && srv->running) {
                 if (srv->original_log_function != R_NilValue) {
-                    // Get function as deparsed string
+                    // Get function as deparsed string with error protection
                     SEXP deparse_call = PROTECT(lang2(Rf_install("deparse"), srv->original_log_function));
-                    SEXP deparsed_func = R_tryEval(deparse_call, R_GlobalEnv, NULL);
+                    int error_occurred = 0;
+                    SEXP deparsed_func = R_tryEval(deparse_call, R_GlobalEnv, &error_occurred);
                     
-                    if (deparsed_func != NULL && LENGTH(deparsed_func) > 0) {
+                    if (!error_occurred && deparsed_func != NULL && LENGTH(deparsed_func) > 0) {
                         const char* func_text = CHAR(STRING_ELT(deparsed_func, 0));
                         
                         // Store first line of function for identification
@@ -461,8 +480,8 @@ SEXP list_servers() {
             
             // Add authentication information
             const char* auth_status = "none";
-            if (srv->auth_keys != NULL && strlen(srv->auth_keys) > 0) {
-                auth_status = srv->auth_keys; // Show the actual keys (could be "enabled" for privacy)
+            if (0) { // Disabled - auth status now shown differently
+                auth_status = "pipe-based"; // Auth now via pipe system
             }
             SET_STRING_ELT(info, 8, mkChar(auth_status));
             
@@ -557,7 +576,11 @@ void go_server_finalizer(SEXP extptr) {
     if (srv->addr) free(srv->addr);
     if (srv->certfile) free(srv->certfile);
     if (srv->keyfile) free(srv->keyfile);
-    if (srv->auth_keys) free(srv->auth_keys);
+    // Clean up auth context
+    if (srv->auth_context) {
+        cleanup_auth_context(srv->auth_context);
+        srv->auth_context = NULL;
+    }
     free(srv);
     R_ClearExternalPtr(extptr);
 }

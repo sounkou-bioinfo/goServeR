@@ -12,6 +12,11 @@ SEXP shutdown_server(SEXP);
 SEXP register_log_handler(SEXP, SEXP, SEXP);
 SEXP remove_log_handler(SEXP);
 
+// Auth management functions (new server-based)
+SEXP manage_server_auth(SEXP, SEXP, SEXP);
+SEXP list_server_auth_keys(SEXP);
+SEXP add_initial_server_auth_keys(SEXP, SEXP);
+
 // RC-level (raw C) entry points
 SEXP RC_StartServer(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_cors, SEXP r_coop, SEXP r_tls, SEXP r_certfile, SEXP r_keyfile, SEXP r_silent, SEXP r_log_handler, SEXP r_auth_keys) {
     return run_server(r_dir, r_addr, r_prefix, r_blocking, r_cors, r_coop, r_tls, r_certfile, r_keyfile, r_silent, r_log_handler, r_auth_keys);
@@ -32,6 +37,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"RC_ShutdownServer", (DL_FUNC) &RC_ShutdownServer, 1},
     {"RC_register_log_handler", (DL_FUNC) &register_log_handler, 3},
     {"RC_remove_log_handler", (DL_FUNC) &remove_log_handler, 1},
+    {"RC_manage_server_auth", (DL_FUNC) &manage_server_auth, 3},
+    {"RC_list_server_auth_keys", (DL_FUNC) &list_server_auth_keys, 1},
+    {"RC_add_initial_server_auth_keys", (DL_FUNC) &add_initial_server_auth_keys, 2},
     {NULL, NULL, 0}
 };
 
