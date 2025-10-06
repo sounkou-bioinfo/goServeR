@@ -478,10 +478,15 @@ SEXP list_servers() {
             SET_STRING_ELT(info, 6, mkChar(log_destination));
             SET_STRING_ELT(info, 7, mkChar(log_function_info));
             
-            // Add authentication information
+            // Add authentication information - check if server has auth context
             const char* auth_status = "none";
-            if (0) { // Disabled - auth status now shown differently
-                auth_status = "pipe-based"; // Auth now via pipe system
+            if (srv->auth_context) {
+                // Check if server has any keys configured
+                if (srv->auth_context->num_keys > 0) {
+                    auth_status = "enabled";
+                } else {
+                    auth_status = "configured"; // Auth context exists but no keys yet
+                }
             }
             SET_STRING_ELT(info, 8, mkChar(auth_status));
             

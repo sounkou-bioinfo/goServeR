@@ -60,10 +60,10 @@ curl -L http://0.0.0.0:8080/${PWD} 2> /dev/null \
 sleep 2
 
 kill -9 $pid
-#> <pointer: 0x5cd13a4b8400>
-#> [goserveR] 2025/10/06 21:14:24.341579 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> [goserveR] 2025/10/06 21:14:24.341850 Serving 1 directories on http://0.0.0.0:8080
-#> [goserveR] 2025/10/06 21:14:26.032050 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:37998 326.036µs
+#> <pointer: 0x647e8295a3f0>
+#> [goserveR] 2025/10/06 21:21:39.290207 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> [goserveR] 2025/10/06 21:21:39.290366 Serving 1 directories on http://0.0.0.0:8080
+#> [goserveR] 2025/10/06 21:21:40.939696 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:52780 358.628µs
 #> <pre>
 #> <a href="..Rcheck/">..Rcheck/</a>
 #> <a href=".Rbuildignore">.Rbuildignore</a>
@@ -142,7 +142,7 @@ h_http_auth <- runServer(dir = ".", addr = "127.0.0.1:8090", prefix = "/", block
 
 length(listServers())
 #> [1] 1
-# Test authentication - correct key should succeed
+# Test authentication 
 temp_file <- tempfile()
 download.file("http://127.0.0.1:8090/test.txt", 
               destfile = temp_file,
@@ -163,6 +163,22 @@ readLines(temp_file)
 #> [1] "Hello from goServeR!"
 
 unlink(temp_file)
+# Test wrong key should fail
+temp_file_fail <- tempfile()
+tryCatch({
+  download.file("http://127.0.0.1:8090/test.txt", 
+                destfile = temp_file_fail,
+                headers = c("X-API-Key" = "wrong_key"),
+                quiet = TRUE)
+}, error = function(e) {
+  message("Expected error occurred: ", e$message)
+})
+#> Warning in download.file("http://127.0.0.1:8090/test.txt", destfile =
+#> temp_file_fail, : downloaded length 0 != reported length 13
+#> Warning in download.file("http://127.0.0.1:8090/test.txt", destfile =
+#> temp_file_fail, : cannot open URL 'http://127.0.0.1:8090/test.txt': HTTP status
+#> was '401 Unauthorized'
+#> Expected error occurred: cannot open URL 'http://127.0.0.1:8090/test.txt'
 
 # HTTPS server with authentication
 h_https_auth <- runServer(
@@ -202,8 +218,8 @@ listServers() |> str()
 #>   ..$ log_handler    : chr "none"
 #>   ..$ log_destination: chr "none"
 #>   ..$ log_function   : chr "none"
-#>   ..$ authentication : chr "disabled"
-#>   ..$ auth_keys      : chr "none"
+#>   ..$ authentication : chr "enabled"
+#>   ..$ auth_keys      : chr "enabled"
 #>   ..- attr(*, "class")= chr "server_info"
 #>  $ :List of 10
 #>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
@@ -214,8 +230,8 @@ listServers() |> str()
 #>   ..$ log_handler    : chr "none"
 #>   ..$ log_destination: chr "none"
 #>   ..$ log_function   : chr "none"
-#>   ..$ authentication : chr "disabled"
-#>   ..$ auth_keys      : chr "none"
+#>   ..$ authentication : chr "enabled"
+#>   ..$ auth_keys      : chr "enabled"
 #>   ..- attr(*, "class")= chr "server_info"
 #>  - attr(*, "class")= chr "server_list"
 
@@ -438,12 +454,12 @@ listServers() |> str()
 
 # let's get the log by making R idle !
 Sys.sleep(5)
-#> [goserveR] 2025/10/06 21:14:33.608969 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/06 21:14:33.609263 Serving 1 directories on http://127.0.0.1:8350
+#> [goserveR] 2025/10/06 21:21:48.550482 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/06 21:21:48.550673 Serving 1 directories on http://127.0.0.1:8350
 #> 
-#> *** [CUSTOM-SERVER] *** 2025/10/06 21:14:33.617387 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/06 21:14:33.617569 Serving 1 directories on http://127.0.0.1:8352
-#> 2025/10/06 21:14:33.619505 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:42354 137.019µs
+#> *** [CUSTOM-SERVER] *** 2025/10/06 21:21:48.567365 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/06 21:21:48.567408 Serving 1 directories on http://127.0.0.1:8352
+#> 2025/10/06 21:21:48.568905 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:60064 160.373µs
 #>  *** END ***
 shutdownServer(h1)
 shutdownServer(h2)
@@ -455,9 +471,9 @@ shutdownServer(h4)
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")
 }
-#> [2025-10-06 21:14:33] 2025/10/06 21:14:33.612668 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/06 21:14:33.612751 Serving 1 directories on http://127.0.0.1:8351
-#> 2025/10/06 21:14:33.614694 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:50334 185.109µs
+#> [2025-10-06 21:21:48] 2025/10/06 21:21:48.560691 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/06 21:21:48.560748 Serving 1 directories on http://127.0.0.1:8351
+#> 2025/10/06 21:21:48.563031 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:57706 339.812µs
 ```
 
 ## On background log handlers

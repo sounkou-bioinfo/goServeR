@@ -97,7 +97,7 @@ h_http_auth <- runServer(dir = ".", addr = "127.0.0.1:8090", prefix = "/", block
                          auth_keys = c("secret123", "token456"), silent = TRUE)
 
 length(listServers())
-# Test authentication - correct key should succeed
+# Test authentication 
 temp_file <- tempfile()
 download.file("http://127.0.0.1:8090/test.txt", 
               destfile = temp_file,
@@ -116,6 +116,16 @@ download.file("http://127.0.0.1:8090/test.txt",
 readLines(temp_file)
 
 unlink(temp_file)
+# Test wrong key should fail
+temp_file_fail <- tempfile()
+tryCatch({
+  download.file("http://127.0.0.1:8090/test.txt", 
+                destfile = temp_file_fail,
+                headers = c("X-API-Key" = "wrong_key"),
+                quiet = TRUE)
+}, error = function(e) {
+  message("Expected error occurred: ", e$message)
+})
 
 # HTTPS server with authentication
 h_https_auth <- runServer(
