@@ -15,6 +15,12 @@ package main
 
 /*
 #include <stdlib.h>
+
+// Helper function to access elements of a C string array.
+// This avoids unsafe pointer arithmetic in Go.
+static char* get_string_at(char** arr, int i) {
+    return arr[i];
+}
 */
 import "C"
 import (
@@ -29,7 +35,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unsafe"
 )
 
 //export RunServerWithLogging
@@ -50,18 +55,16 @@ func RunServerWithLogging(cDirs **C.char, cAddr *C.char, cPrefixes **C.char, cNu
 		serverAuth = NewPipeAuthManager(int(authPipeFd))
 	}
 
-	// Convert C arrays to Go slices
+	// Convert C arrays to Go slices using a safe helper function
 	dirs := make([]string, numPaths)
 	prefixes := make([]string, numPaths)
 
-	// Extract directories and prefixes from C arrays
 	for i := 0; i < numPaths; i++ {
-		// Access array elements using pointer arithmetic
-		dirPtr := (**C.char)(unsafe.Pointer(uintptr(unsafe.Pointer(cDirs)) + uintptr(i)*unsafe.Sizeof(*cDirs)))
-		prefixPtr := (**C.char)(unsafe.Pointer(uintptr(unsafe.Pointer(cPrefixes)) + uintptr(i)*unsafe.Sizeof(*cPrefixes)))
+		cDir := C.get_string_at(cDirs, C.int(i))
+		cPrefix := C.get_string_at(cPrefixes, C.int(i))
 
-		dir := C.GoString(*dirPtr)
-		prefix := C.GoString(*prefixPtr)
+		dir := C.GoString(cDir)
+		prefix := C.GoString(cPrefix)
 
 		if dir == "" {
 			dir = "."
