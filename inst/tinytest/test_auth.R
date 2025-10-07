@@ -47,10 +47,7 @@ server1 <- runServer(
   mustWork = FALSE
 )
 
-# Verify server is running
-if (!isRunning(server1)) {
-  skip("Server failed to start - possibly due to port conflicts or permissions on this platform")
-}
+
 expect_true(isRunning(server1), "Server should be running after start")
 
 Sys.sleep(2)
@@ -91,9 +88,8 @@ tryCatch(
         # Check if this could be the Go 1.20+ filepath.Clean issue
         cat("Windows detected. This could be related to Go 1.20+ filepath handling changes\n")
         cat("See: https://github.com/golang/go/issues/56336\n")
-        skip("Windows server connectivity issues - likely Go filepath handling or pipe communication problems")
       } else {
-        skip("Server not responding properly - skipping test")
+        message("let's check if the server is running properly")
       }
     } else {
       expect_true(FALSE, "Download should succeed without auth")
@@ -121,10 +117,7 @@ server2 <- runServer(
   mustWork = FALSE
 )
 
-# Verify server is running
-if (!isRunning(server2)) {
-  skip("Auth server failed to start - possibly due to port conflicts or permissions")
-}
+
 expect_true(isRunning(server2), "Auth server should be running after start")
 
 Sys.sleep(2)
@@ -163,10 +156,7 @@ tryCatch(
   },
   error = function(e) {
     cat("Expected auth error:", e$message, "\n")
-    # Check for Windows pipe communication issues
-    if (.Platform$OS.type == "windows" && grepl("Could not connect to server", e$message, ignore.case = TRUE)) {
-      skip("Windows pipe-based authentication server connectivity issues")
-    }
+
     auth_failed <<- TRUE
   }
 )
@@ -204,14 +194,8 @@ tryCatch(
   },
   error = function(e) {
     cat("Error with correct auth:", e$message, "\n")
-    # Check if this is a known limitation or Windows pipe issue
-    if (grepl("headers.*not supported", e$message, ignore.case = TRUE)) {
-      skip("Header authentication not supported in this R/platform configuration")
-    } else if (.Platform$OS.type == "windows" && grepl("Could not connect to server|401|Unauthorized|403|Forbidden", e$message, ignore.case = TRUE)) {
-      skip("Windows pipe-based authentication may have timing/compatibility issues")
-    } else {
-      expect_true(FALSE, "Download should succeed with correct auth key")
-    }
+
+    expect_true(FALSE, "Download should succeed with correct auth key")
   }
 )
 
