@@ -1,2 +1,11 @@
 EXPORTS
 R_init_goserveR
+RC_list_servers
+RC_shutdown_server
+RC_StartServer
+RC_is_running
+RC_register_log_handler
+RC_remove_log_handler
+RC_manage_server_auth
+RC_list_server_auth_keys
+RC_add_initial_server_auth_keys
