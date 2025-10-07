@@ -361,11 +361,14 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
 SEXP list_servers() {
     LOCK_SERVER_LIST();
     
-    // First pass: count active servers
+    // First pass: count active servers and create safe snapshot
     int active_count = 0;
+    go_server_t* active_servers[MAX_SERVERS];
+    
     for (int i = 0; i < MAX_SERVERS; ++i) {
         go_server_t* srv = server_list[i];
-        if (srv && srv->running) {
+        if (srv && srv->running && srv->addr && srv->dirs && srv->prefixes && srv->num_paths > 0) {
+            active_servers[active_count] = srv;
             active_count++;
         }
     }
@@ -373,126 +376,132 @@ SEXP list_servers() {
     SEXP res = PROTECT(allocVector(VECSXP, active_count));
     int k = 0;
     
-    // Second pass: collect server info
-    for (int i = 0; i < MAX_SERVERS; ++i) {
-        go_server_t* srv = server_list[i];
-        if (srv && srv->running && srv->dirs && srv->prefixes && srv->addr && srv->num_paths > 0 && k < active_count) {
-            // Double-check server is still valid before accessing its members
-            if (!srv->running) continue; // Skip if shutdown during iteration
-            
-            SEXP info = PROTECT(allocVector(STRSXP, 9)); // Changed from 8 to 9 for auth info
-            
-            // For multiple directories, combine them into a single string representation
-            // Calculate needed size first
-            int dirs_size = 1; // for null terminator
-            int prefixes_size = 1; // for null terminator
-            for (int j = 0; j < srv->num_paths; j++) {
-                if (srv->dirs[j] && srv->prefixes[j]) {
-                    dirs_size += strlen(srv->dirs[j]);
-                    prefixes_size += strlen(srv->prefixes[j]);
-                    if (j > 0) {
-                        dirs_size += 2; // for ", "
-                        prefixes_size += 2; // for ", "
-                    }
-                }
-            }
-            
-            // Allocate dynamic buffers
-            char* combined_dirs = (char*)malloc(dirs_size);
-            char* combined_prefixes = (char*)malloc(prefixes_size);
-            combined_dirs[0] = '\0';
-            combined_prefixes[0] = '\0';
-            
-            for (int j = 0; j < srv->num_paths; j++) {
-                if (srv->dirs[j] && srv->prefixes[j]) {
-                    if (j > 0) {
-                        strcat(combined_dirs, ", ");
-                        strcat(combined_prefixes, ", ");
-                    }
-                    strcat(combined_dirs, srv->dirs[j]);
-                    strcat(combined_prefixes, srv->prefixes[j]);
-                }
-            }
-            
-            SET_STRING_ELT(info, 0, mkChar(combined_dirs));
-            SET_STRING_ELT(info, 1, mkChar(srv->addr));
-            SET_STRING_ELT(info, 2, mkChar(combined_prefixes));
-            SET_STRING_ELT(info, 3, mkChar(srv->tls ? "HTTPS" : "HTTP"));
-            SET_STRING_ELT(info, 4, mkChar(srv->silent ? "silent" : "logging"));
-            
-            // Free the temporary buffers
-            free(combined_dirs);
-            free(combined_prefixes);
-            
-            // Extract actual log handler information
-            const char* log_handler_type = "none";
-            const char* log_destination = "none";
-            const char* log_function_info = "none";
-            
-            if (!srv->silent && srv->running) {
-                if (srv->original_log_function != R_NilValue) {
-                    // Get function as deparsed string with error protection
-                    SEXP deparse_call = PROTECT(lang2(Rf_install("deparse"), srv->original_log_function));
-                    int error_occurred = 0;
-                    SEXP deparsed_func = R_tryEval(deparse_call, R_GlobalEnv, &error_occurred);
-                    
-                    if (!error_occurred && deparsed_func != NULL && LENGTH(deparsed_func) > 0) {
-                        const char* func_text = CHAR(STRING_ELT(deparsed_func, 0));
-                        
-                        // Store first line of function for identification
-                        log_function_info = func_text;
-                        
-                        // Analyze function to determine type and destination
-                        if (strstr(func_text, "file") != NULL && strstr(func_text, "append") != NULL) {
-                            log_handler_type = "file_logger";
-                            
-                            // Try to extract filename from the function environment/closure
-                            if (srv->log_file_path != NULL) {
-                                log_destination = srv->log_file_path;
-                            } else if (strstr(func_text, "logfile") != NULL) {
-                                log_destination = "custom_file_var";
-                            } else {
-                                log_destination = "file_unknown";
-                            }
-                        } else if (strstr(func_text, "cat") != NULL) {
-                            log_handler_type = "console_logger";
-                            log_destination = "console";
-                        } else {
-                            log_handler_type = "custom_function";
-                            log_destination = "custom";
-                        }
-                    } else {
-                        log_handler_type = "custom_unparseable";
-                        log_destination = "unknown";
-                        log_function_info = "<unparseable function>";
-                    }
-                    UNPROTECT(1); // deparse_call
-                } else {
-                    log_handler_type = "default";
-                    log_destination = "console";
-                    log_function_info = ".default_log_callback";
-                }
-            }
-            
-            SET_STRING_ELT(info, 5, mkChar(log_handler_type));
-            SET_STRING_ELT(info, 6, mkChar(log_destination));
-            SET_STRING_ELT(info, 7, mkChar(log_function_info));
-            
-            // Add authentication information - check if server has auth context
-            const char* auth_status = "none";
-            if (srv->auth_context) {
-                // Check if server has any keys configured
-                if (srv->auth_context->num_keys > 0) {
-                    auth_status = "enabled";
-                } else {
-                    auth_status = "configured"; // Auth context exists but no keys yet
-                }
-            }
-            SET_STRING_ELT(info, 8, mkChar(auth_status));
-            
-            SET_VECTOR_ELT(res, k++, info);
-            UNPROTECT(1);
+    // Second pass: collect server info from snapshot
+    for (int i = 0; i < active_count; ++i) {
+        go_server_t* srv = active_servers[i];
+        
+        // Verify the server is still valid before accessing
+        if (!srv || !srv->running || !srv->dirs || !srv->prefixes || !srv->addr || srv->num_paths <= 0) {
+            continue;
         }
+        
+        SEXP info = PROTECT(allocVector(STRSXP, 9)); // 9 elements for auth info
+        
+        // Create safe local copies while holding the lock
+        char* addr_copy = srv->addr ? strdup(srv->addr) : strdup("unknown");
+        int num_paths_copy = srv->num_paths;
+        int tls_copy = srv->tls;
+        int silent_copy = srv->silent;
+        
+        char** dirs_copy = malloc(num_paths_copy * sizeof(char*));
+        char** prefixes_copy = malloc(num_paths_copy * sizeof(char*));
+        
+        for (int j = 0; j < num_paths_copy; j++) {
+            if (srv->dirs[j] && srv->prefixes[j]) {
+                dirs_copy[j] = strdup(srv->dirs[j]);
+                prefixes_copy[j] = strdup(srv->prefixes[j]);
+            } else {
+                dirs_copy[j] = strdup("unknown");
+                prefixes_copy[j] = strdup("/");
+            }
+        }
+        
+        // Store auth context status while holding lock
+        const char* auth_status = "none";
+        if (srv->auth_context) {
+            if (srv->auth_context->num_keys > 0) {
+                auth_status = "enabled";
+            } else {
+                auth_status = "configured";
+            }
+        }
+        char* auth_status_copy = strdup(auth_status);
+        
+        // Store log handler info while holding lock
+        const char* log_handler_type = "none";
+        const char* log_destination = "none";
+        const char* log_function_info = "none";
+        
+        if (!srv->silent && srv->running) {
+            if (srv->original_log_function != R_NilValue) {
+                log_handler_type = "custom_function";
+                log_destination = "custom";
+                log_function_info = "<custom function>";
+            } else {
+                log_handler_type = "default";
+                log_destination = "console";
+                log_function_info = ".default_log_callback";
+            }
+        }
+        
+        char* log_handler_type_copy = strdup(log_handler_type);
+        char* log_destination_copy = strdup(log_destination);
+        char* log_function_info_copy = strdup(log_function_info);
+        
+    UNLOCK_SERVER_LIST(); // Release lock before string processing
+    
+        // Process the copied data (no more srv access after this point)
+        
+        // For multiple directories, combine them into a single string representation
+        int dirs_size = 1; // for null terminator
+        int prefixes_size = 1; // for null terminator
+        for (int j = 0; j < num_paths_copy; j++) {
+            if (dirs_copy[j] && prefixes_copy[j]) {
+                dirs_size += strlen(dirs_copy[j]);
+                prefixes_size += strlen(prefixes_copy[j]);
+                if (j > 0) {
+                    dirs_size += 2; // for ", "
+                    prefixes_size += 2; // for ", "
+                }
+            }
+        }
+        
+        char* combined_dirs = malloc(dirs_size);
+        char* combined_prefixes = malloc(prefixes_size);
+        combined_dirs[0] = '\0';
+        combined_prefixes[0] = '\0';
+        
+        for (int j = 0; j < num_paths_copy; j++) {
+            if (dirs_copy[j] && prefixes_copy[j]) {
+                if (j > 0) {
+                    strcat(combined_dirs, ", ");
+                    strcat(combined_prefixes, ", ");
+                }
+                strcat(combined_dirs, dirs_copy[j]);
+                strcat(combined_prefixes, prefixes_copy[j]);
+            }
+        }
+        
+        SET_STRING_ELT(info, 0, mkChar(combined_dirs));
+        SET_STRING_ELT(info, 1, mkChar(addr_copy));
+        SET_STRING_ELT(info, 2, mkChar(combined_prefixes));
+        SET_STRING_ELT(info, 3, mkChar(tls_copy ? "HTTPS" : "HTTP"));
+        SET_STRING_ELT(info, 4, mkChar(silent_copy ? "silent" : "logging"));
+        SET_STRING_ELT(info, 5, mkChar(log_handler_type_copy));
+        SET_STRING_ELT(info, 6, mkChar(log_destination_copy));
+        SET_STRING_ELT(info, 7, mkChar(log_function_info_copy));
+        SET_STRING_ELT(info, 8, mkChar(auth_status_copy));
+        
+        // Clean up all allocated memory
+        free(combined_dirs);
+        free(combined_prefixes);
+        free(addr_copy);
+        free(auth_status_copy);
+        free(log_handler_type_copy);
+        free(log_destination_copy);
+        free(log_function_info_copy);
+        
+        for (int j = 0; j < num_paths_copy; j++) {
+            if (dirs_copy[j]) free(dirs_copy[j]);
+            if (prefixes_copy[j]) free(prefixes_copy[j]);
+        }
+        free(dirs_copy);
+        free(prefixes_copy);
+        
+        SET_VECTOR_ELT(res, k++, info);
+        UNPROTECT(1);
+        
+    LOCK_SERVER_LIST(); // Re-acquire lock for next iteration
     }
     
     UNLOCK_SERVER_LIST();

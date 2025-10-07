@@ -60,10 +60,10 @@ curl -L http://0.0.0.0:8080/${PWD} 2> /dev/null \
 sleep 2
 
 kill -9 $pid
-#> <pointer: 0x5771cf7d7400>
-#> [goserveR] 2025/10/07 02:20:33.905910 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> [goserveR] 2025/10/07 02:20:33.906158 Serving 1 directories on http://0.0.0.0:8080
-#> [goserveR] 2025/10/07 02:20:35.626751 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:36052 445.387µs
+#> <pointer: 0x641b21016bb0>
+#> [goserveR] 2025/10/08 03:18:49.627131 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> [goserveR] 2025/10/08 03:18:49.627452 Serving 1 directories on http://0.0.0.0:8080
+#> [goserveR] 2025/10/08 03:18:51.306451 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:56076 426.96µs
 #> <pre>
 #> <a href="..Rcheck/">..Rcheck/</a>
 #> <a href=".Rbuildignore">.Rbuildignore</a>
@@ -296,13 +296,13 @@ listServers() |> str()
 
 #Server 1 (port 8081) 
 length(readLines(paste0("http://127.0.0.1:8081/", normalizePath("."))))
-#> [1] 32
+#> [1] 33
 #Server 2 (port 8082)
 length(readLines(paste0("http://127.0.0.1:8082/", normalizePath("."))))
-#> [1] 32
+#> [1] 33
 #Server 3 (port 8083)
 length(readLines(paste0("http://127.0.0.1:8083/", normalizePath("."))))
-#> [1] 32
+#> [1] 33
 
 # Shutdown all servers
 shutdownServer(h1)
@@ -363,7 +363,7 @@ readLines("http://127.0.0.1:8090/docs/doc.txt")
 
 # Files endpoint (current directory)
 length(readLines(paste0("http://127.0.0.1:8090/files/")))
-#> [1] 34
+#> [1] 35
 # Cleanup
 shutdownServer(h_multi)
 unlink(c("test_data", "test_docs"), recursive = TRUE)
@@ -422,7 +422,7 @@ listServers() |> str()
 #>   ..$ logging        : chr "logging"
 #>   ..$ log_handler    : chr "custom_function"
 #>   ..$ log_destination: chr "custom"
-#>   ..$ log_function   : chr "function (handler, message, user) "
+#>   ..$ log_function   : chr "<custom function>"
 #>   ..$ authentication : chr "disabled"
 #>   ..$ auth_keys      : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
@@ -434,7 +434,7 @@ listServers() |> str()
 #>   ..$ logging        : chr "logging"
 #>   ..$ log_handler    : chr "custom_function"
 #>   ..$ log_destination: chr "custom"
-#>   ..$ log_function   : chr "function (handler, message, user) "
+#>   ..$ log_function   : chr "<custom function>"
 #>   ..$ authentication : chr "disabled"
 #>   ..$ auth_keys      : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
@@ -454,12 +454,12 @@ listServers() |> str()
 
 # let's get the log by making R idle !
 Sys.sleep(5)
-#> [goserveR] 2025/10/07 02:20:43.264329 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/07 02:20:43.264520 Serving 1 directories on http://127.0.0.1:8350
+#> [goserveR] 2025/10/08 03:18:58.919885 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/08 03:18:58.920120 Serving 1 directories on http://127.0.0.1:8350
 #> 
-#> *** [CUSTOM-SERVER] *** 2025/10/07 02:20:43.276051 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/07 02:20:43.276121 Serving 1 directories on http://127.0.0.1:8352
-#> 2025/10/07 02:20:43.278174 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:53592 303.87µs
+#> *** [CUSTOM-SERVER] *** 2025/10/08 03:18:58.933522 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/08 03:18:58.933596 Serving 1 directories on http://127.0.0.1:8352
+#> 2025/10/08 03:18:58.935160 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:55674 186.205µs
 #>  *** END ***
 shutdownServer(h1)
 shutdownServer(h2)
@@ -471,9 +471,9 @@ shutdownServer(h4)
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")
 }
-#> [2025-10-07 02:20:43] 2025/10/07 02:20:43.271707 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/07 02:20:43.271773 Serving 1 directories on http://127.0.0.1:8351
-#> 2025/10/07 02:20:43.273544 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:42092 194.445µs
+#> [2025-10-08 03:18:58] 2025/10/08 03:18:58.926785 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/08 03:18:58.926862 Serving 1 directories on http://127.0.0.1:8351
+#> 2025/10/08 03:18:58.928793 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:35298 257.657µs
 ```
 
 ## On background log handlers

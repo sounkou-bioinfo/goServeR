@@ -31,11 +31,59 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
 )
+
+// safeClean safely cleans a path and prevents Windows volume name issues
+// that can occur with filepath.Clean in Go 1.20+
+// See: https://github.com/golang/go/issues/58451
+func safeClean(inputPath string) string {
+	if runtime.GOOS != "windows" {
+		return filepath.Clean(inputPath)
+	}
+
+	// On Windows, use path.Clean first to avoid volume name issues,
+	// then convert to OS-specific separators
+	cleaned := path.Clean("/" + strings.TrimPrefix(inputPath, "/"))
+	if cleaned == "/" {
+		cleaned = "."
+	} else {
+		cleaned = strings.TrimPrefix(cleaned, "/")
+	}
+
+	// Convert to Windows path separators
+	return filepath.FromSlash(cleaned)
+}
+
+// safeAbs safely gets absolute path with Windows volume name protection
+func safeAbs(inputPath string) (string, error) {
+	if runtime.GOOS != "windows" {
+		return filepath.Abs(inputPath)
+	}
+
+	// On Windows, first clean the path safely
+	cleanPath := safeClean(inputPath)
+
+	// Then get absolute path
+	absPath, err := filepath.Abs(cleanPath)
+	if err != nil {
+		return cleanPath, err
+	}
+
+	// Additional safety: ensure no .. components in volume name
+	volumeName := filepath.VolumeName(absPath)
+	if strings.Contains(volumeName, "..") {
+		// Reject paths with .. in volume name - potential security issue
+		return cleanPath, nil
+	}
+
+	return absPath, nil
+}
 
 //export RunServerWithLogging
 func RunServerWithLogging(cDirs **C.char, cAddr *C.char, cPrefixes **C.char, cNumPaths C.int, cCors, cCoop, cTls, cSilent C.int, cCertFile, cKeyFile *C.char, shutdownFd, logFd C.int, cAuthKeys *C.char, authPipeFd C.int) {
@@ -69,9 +117,9 @@ func RunServerWithLogging(cDirs **C.char, cAddr *C.char, cPrefixes **C.char, cNu
 		if dir == "" {
 			dir = "."
 		}
-		absDir, err := filepath.Abs(dir)
+		absDir, err := safeAbs(dir)
 		if err != nil {
-			absDir = filepath.Clean(dir)
+			absDir = safeClean(dir)
 		}
 		dirs[i] = absDir
 

@@ -34,14 +34,14 @@ NULL
 #'
 #' # Start a server with static auth keys (backward compatible)
 #' h <- runServer(
-#'     dir = ".", addr = "0.0.0.0:8080", blocking = FALSE,
-#'     auth_keys = c("secret123", "token456")
+#'   dir = ".", addr = "0.0.0.0:8080", blocking = FALSE,
+#'   auth_keys = c("secret123", "token456")
 #' )
 #'
 #' # Start a server with dynamic auth system
 #' h <- runServer(
-#'     dir = ".", addr = "0.0.0.0:8080", blocking = FALSE,
-#'     auth = TRUE, initial_keys = c("secret123")
+#'   dir = ".", addr = "0.0.0.0:8080", blocking = FALSE,
+#'   auth = TRUE, initial_keys = c("secret123")
 #' )
 #'
 #' # Manage auth keys dynamically (only with auth=TRUE)
@@ -52,19 +52,19 @@ NULL
 #'
 #' # Start a server serving multiple directories
 #' h <- runServer(
-#'     dir = c("./data", "./docs", "."),
-#'     prefix = c("/api/data", "/docs", "/files"),
-#'     addr = "0.0.0.0:8080",
-#'     blocking = FALSE
+#'   dir = c("./data", "./docs", "."),
+#'   prefix = c("/api/data", "/docs", "/files"),
+#'   addr = "0.0.0.0:8080",
+#'   blocking = FALSE
 #' )
 #'
 #' # Start a server with custom log handler
 #' logfile <- tempfile("server_", fileext = ".log")
 #' h <- runServer(
-#'     dir = ".", addr = "0.0.0.0:8080", blocking = FALSE,
-#'     log_handler = function(handler, message, user) {
-#'         cat("[CUSTOM]", message, file = logfile, append = TRUE)
-#'     }
+#'   dir = ".", addr = "0.0.0.0:8080", blocking = FALSE,
+#'   log_handler = function(handler, message, user) {
+#'     cat("[CUSTOM]", message, file = logfile, append = TRUE)
+#'   }
 #' )
 #'
 #' # List all running background servers
@@ -77,23 +77,22 @@ NULL
 #' shutdownServer(h)
 #' }
 runServer <- function(
-  dir = getwd(),
-  addr = "0.0.0.0:8181",
-  prefix = "",
-  blocking = TRUE,
-  cors = FALSE,
-  coop = FALSE,
-  tls = FALSE,
-  certfile = "cert.pem",
-  keyfile = "key.pem",
-  silent = FALSE,
-  log_handler = NULL,
-  auth_keys = c(),
-  auth = FALSE,
-  initial_keys = c(),
-  mustWork = FALSE,
-  ...
-) {
+    dir = getwd(),
+    addr = "0.0.0.0:8181",
+    prefix = "",
+    blocking = TRUE,
+    cors = FALSE,
+    coop = FALSE,
+    tls = FALSE,
+    certfile = "cert.pem",
+    keyfile = "key.pem",
+    silent = FALSE,
+    log_handler = NULL,
+    auth_keys = c(),
+    auth = FALSE,
+    initial_keys = c(),
+    mustWork = FALSE,
+    ...) {
   # Normalize paths to prevent basic traversal
   if (length(dir) == 1) {
     dir <- normalizePath(dir, mustWork = TRUE)
@@ -249,10 +248,19 @@ runServer <- function(
 #' @return a server_list S3 object containing server information
 #' @export
 listServers <- function() {
-  # Add error handling to prevent segfaults
+  # Add error handling to prevent segfaults with better protection
   tryCatch(
     {
-      servers <- .Call(RC_list_servers)
+      # First check: try a quick call to see if the C function is stable
+      test_call <- tryCatch(.Call(RC_list_servers), error = function(e) NULL)
+      if (is.null(test_call)) {
+        warning("listServers C function returned NULL, returning empty list")
+        result <- list()
+        class(result) <- "server_list"
+        return(result)
+      }
+
+      servers <- test_call
 
       # Check if the result is NULL or corrupted
       if (is.null(servers)) {
@@ -400,19 +408,18 @@ isRunning <- function(handle) {
 #' @param auth_keys character vector of API keys for authentication
 #' @export
 StartServer <- function(
-  dir,
-  addr,
-  prefix,
-  blocking,
-  cors = FALSE,
-  coop = FALSE,
-  tls = FALSE,
-  certfile = "cert.pem",
-  keyfile = "key.pem",
-  silent = FALSE,
-  log_handler = NULL,
-  auth_keys = c()
-) {
+    dir,
+    addr,
+    prefix,
+    blocking,
+    cors = FALSE,
+    coop = FALSE,
+    tls = FALSE,
+    certfile = "cert.pem",
+    keyfile = "key.pem",
+    silent = FALSE,
+    log_handler = NULL,
+    auth_keys = c()) {
   .Call(
     RC_StartServer,
     dir,
@@ -481,9 +488,8 @@ removeLogHandler <- function(handler) {
 #' @return external pointer to log handler
 #' @export
 createFileLogHandler <- function(
-  fd,
-  logfile = tempfile("goserveR_", fileext = ".log")
-) {
+    fd,
+    logfile = tempfile("goserveR_", fileext = ".log")) {
   # Create a closure that captures the logfile path
   file_logger_with_path <- function(handler, message, captured_logfile) {
     cat(message, file = captured_logfile, append = TRUE)
