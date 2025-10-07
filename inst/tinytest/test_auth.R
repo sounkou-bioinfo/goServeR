@@ -46,7 +46,8 @@ expect_true(isRunning(server1), "Server should be running after start")
 # Helper function to wait for a server to be responsive
 
 # Test HTTP requests - use R's built-in download.file instead of curl
-if (TRUE) { # Always run these tests since download.file is built-in
+if (TRUE) {
+  # Always run these tests since download.file is built-in
   # Add a small delay to ensure server is fully started
   Sys.sleep(1)
 
@@ -54,7 +55,8 @@ if (TRUE) { # Always run these tests since download.file is built-in
   temp_file <- tempfile()
   tryCatch(
     {
-      download.file("http://127.0.0.1:8190/test.txt",
+      download.file(
+        "http://127.0.0.1:8190/test.txt",
         destfile = temp_file,
         quiet = TRUE
       )
@@ -112,12 +114,14 @@ Sys.sleep(1) # Give server time to start
 writeLines(test_content, file.path(test_dir, "test.txt"))
 list.files(test_dir) |> print()
 
-if (TRUE) { # Always run since download.file is built-in
+if (TRUE) {
+  # Always run since download.file is built-in
   # Test without key - should fail
   temp_file_fail <- tempfile()
   tryCatch(
     {
-      download.file("http://127.0.0.1:8291/test.txt",
+      download.file(
+        "http://127.0.0.1:8291/test.txt",
         destfile = temp_file_fail,
         quiet = TRUE
       )
@@ -140,7 +144,8 @@ if (TRUE) { # Always run since download.file is built-in
     {
       # Note: download.file may not support custom headers in all R versions
       # We'll try a different approach for authentication testing
-      download.file("http://127.0.0.1:8291/test.txt",
+      download.file(
+        "http://127.0.0.1:8291/test.txt",
         destfile = temp_file_success,
         quiet = TRUE
       )
