@@ -51,9 +51,7 @@ it with curl
 # Start the server in the background
 Rscript -e "goserveR::runServer(addr = '0.0.0.0:8080', blocking = FALSE); Sys.sleep(10000)" &
 pid=$!
-
 sleep 2
-
 curl -L http://0.0.0.0:8080/${PWD} 2> /dev/null \
  | head -5
 
