@@ -51,17 +51,19 @@ it with curl
 # Start the server in the background
 Rscript -e "goserveR::runServer(addr = '0.0.0.0:8080', blocking = FALSE); Sys.sleep(10000)" &
 pid=$!
+
 sleep 2
+
 curl -L http://0.0.0.0:8080/${PWD} 2> /dev/null \
  | head -5
 
 sleep 2
 
 kill -9 $pid
-#> <pointer: 0x641b21016bb0>
-#> [goserveR] 2025/10/08 03:18:49.627131 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> [goserveR] 2025/10/08 03:18:49.627452 Serving 1 directories on http://0.0.0.0:8080
-#> [goserveR] 2025/10/08 03:18:51.306451 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:56076 426.96µs
+#> <pointer: 0x5974ba120a00>
+#> [goserveR] 2025/10/26 00:35:06.902380 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> [goserveR] 2025/10/26 00:35:06.902698 Serving 1 directories on http://0.0.0.0:8080
+#> [goserveR] 2025/10/26 00:35:08.579391 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:57562 228.533µs
 #> <pre>
 #> <a href="..Rcheck/">..Rcheck/</a>
 #> <a href=".Rbuildignore">.Rbuildignore</a>
@@ -294,13 +296,13 @@ listServers() |> str()
 
 #Server 1 (port 8081) 
 length(readLines(paste0("http://127.0.0.1:8081/", normalizePath("."))))
-#> [1] 33
+#> [1] 32
 #Server 2 (port 8082)
 length(readLines(paste0("http://127.0.0.1:8082/", normalizePath("."))))
-#> [1] 33
+#> [1] 32
 #Server 3 (port 8083)
 length(readLines(paste0("http://127.0.0.1:8083/", normalizePath("."))))
-#> [1] 33
+#> [1] 32
 
 # Shutdown all servers
 shutdownServer(h1)
@@ -361,7 +363,7 @@ readLines("http://127.0.0.1:8090/docs/doc.txt")
 
 # Files endpoint (current directory)
 length(readLines(paste0("http://127.0.0.1:8090/files/")))
-#> [1] 35
+#> [1] 34
 # Cleanup
 shutdownServer(h_multi)
 unlink(c("test_data", "test_docs"), recursive = TRUE)
@@ -452,12 +454,12 @@ listServers() |> str()
 
 # let's get the log by making R idle !
 Sys.sleep(5)
-#> [goserveR] 2025/10/08 03:18:58.919885 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/08 03:18:58.920120 Serving 1 directories on http://127.0.0.1:8350
+#> [goserveR] 2025/10/26 00:35:16.246111 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/26 00:35:16.246345 Serving 1 directories on http://127.0.0.1:8350
 #> 
-#> *** [CUSTOM-SERVER] *** 2025/10/08 03:18:58.933522 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/08 03:18:58.933596 Serving 1 directories on http://127.0.0.1:8352
-#> 2025/10/08 03:18:58.935160 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:55674 186.205µs
+#> *** [CUSTOM-SERVER] *** 2025/10/26 00:35:16.260943 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/26 00:35:16.261027 Serving 1 directories on http://127.0.0.1:8352
+#> 2025/10/26 00:35:16.262892 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:40474 182.156µs
 #>  *** END ***
 shutdownServer(h1)
 shutdownServer(h2)
@@ -469,9 +471,9 @@ shutdownServer(h4)
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")
 }
-#> [2025-10-08 03:18:58] 2025/10/08 03:18:58.926785 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/08 03:18:58.926862 Serving 1 directories on http://127.0.0.1:8351
-#> 2025/10/08 03:18:58.928793 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:35298 257.657µs
+#> [2025-10-26 00:35:16] 2025/10/26 00:35:16.255186 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
+#> 2025/10/26 00:35:16.255264 Serving 1 directories on http://127.0.0.1:8351
+#> 2025/10/26 00:35:16.257517 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:57338 248.509µs
 ```
 
 ## On background log handlers
@@ -536,3 +538,13 @@ openssl req -new -x509 -key server.key -out server.crt -days 365
 - [R Extensions
   Manual](https://cran.r-project.org/doc/manuals/r-devel/R-exts.pdf)
 - [Go Static File Server](https://github.com/eliben/static-server)
+
+## LLM Usage Disclosure
+
+Code and documentation in this project have been generated with the
+assistance of the github Copilot LLM tools. While we have reviewed and
+edited the generated content, we acknowledge that LLM tools were used in
+the creation process and accordingly (since these models are trained on
+GPL code and other commons + proprietary software license is fake
+anyway) the code is released under GPL-3. So if you use this code in any
+way, you must comply with the GPL-3 license.
