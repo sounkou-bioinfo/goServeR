@@ -317,3 +317,6 @@ openssl req -new -x509 -key server.key -out server.crt -days 365
 - [Background C Code](https://github.com/s-u/background)
 - [R Extensions Manual](https://cran.r-project.org/doc/manuals/r-devel/R-exts.pdf)
 - [Go Static File Server](https://github.com/eliben/static-server)
+
+## LLM Usage Disclosure
+Code and documentation in this project have been generated with the assistance of the github Copilot LLM tools. While we have reviewed and edited the generated content, we acknowledge that LLM tools were used in the creation process and accordingly (since these models are trained on GPL code and other commons + proprietary software license is fake anyway) the code is released under GPL-3. So if you use this code in any way, you must comply with the GPL-3 license.
