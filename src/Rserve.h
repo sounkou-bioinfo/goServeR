@@ -4,11 +4,13 @@
 #include <R.h>
 #include <Rinternals.h>
 #include <R_ext/Visibility.h>
+#include <stdint.h>
 #include "serve.h"
 #include "interupt.h"
 
 #ifdef _WIN32
 #include <windows.h>
+#include <io.h>
 #define THREAD_TYPE HANDLE
 #define PIPE_TYPE int
 #else
@@ -17,8 +19,8 @@
 #define PIPE_TYPE int
 #endif
 
-// Go functions declarations
-void RunServerWithLogging(char** dirs, char* addr, char** prefixes, int num_paths, int cors, int coop, int tls, int silent, char* certfile, char* keyfile, int shutdown_fd, int log_fd, char* auth_keys, int auth_pipe_fd);
+// RunServerWithLogging is declared in the auto-generated serve.h from cgo.
+// Do NOT redeclare it here — the canonical declaration comes from Go.
 
 // Auth context for pipe-based authentication
 typedef struct {

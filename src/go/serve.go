@@ -15,6 +15,14 @@ package main
 
 /*
 #include <stdlib.h>
+#include <stdint.h>
+
+// Platform-safe file handle type for passing pipe handles to Go.
+// On Windows, the C side converts CRT file descriptors to Windows HANDLEs
+// via _get_osfhandle() before passing them here. Go's os.NewFile() expects
+// Windows HANDLEs, not CRT FDs.
+// On Unix, these are plain file descriptors.
+typedef intptr_t go_pipe_handle_t;
 
 // Helper function to access elements of a C string array.
 // This avoids unsafe pointer arithmetic in Go.
@@ -86,7 +94,7 @@ func safeAbs(inputPath string) (string, error) {
 }
 
 //export RunServerWithLogging
-func RunServerWithLogging(cDirs **C.char, cAddr *C.char, cPrefixes **C.char, cNumPaths C.int, cCors, cCoop, cTls, cSilent C.int, cCertFile, cKeyFile *C.char, shutdownFd, logFd C.int, cAuthKeys *C.char, authPipeFd C.int) {
+func RunServerWithLogging(cDirs **C.char, cAddr *C.char, cPrefixes **C.char, cNumPaths C.int, cCors, cCoop, cTls, cSilent C.int, cCertFile, cKeyFile *C.char, shutdownFd, logFd C.go_pipe_handle_t, cAuthKeys *C.char, authPipeFd C.go_pipe_handle_t) {
 	addr := C.GoString(cAddr)
 	certFile := C.GoString(cCertFile)
 	keyFile := C.GoString(cKeyFile)
@@ -100,7 +108,7 @@ func RunServerWithLogging(cDirs **C.char, cAddr *C.char, cPrefixes **C.char, cNu
 	// Create per-server auth manager (not global!)
 	var serverAuth *PipeAuthManager
 	if authPipeFd >= 0 {
-		serverAuth = NewPipeAuthManager(int(authPipeFd))
+		serverAuth = NewPipeAuthManager(uintptr(authPipeFd))
 	}
 
 	// Convert C arrays to Go slices using a safe helper function
@@ -325,15 +333,11 @@ type PipeAuthManager struct {
 	done     chan bool
 }
 
-func NewPipeAuthManager(pipeFd int) *PipeAuthManager {
-	if pipeFd < 0 {
-		return nil // No pipe auth
-	}
-
+func NewPipeAuthManager(pipeFd uintptr) *PipeAuthManager {
 	pam := &PipeAuthManager{
 		keys:     make(map[string]bool),
 		done:     make(chan bool),
-		authPipe: os.NewFile(uintptr(pipeFd), "auth_pipe"),
+		authPipe: os.NewFile(pipeFd, "auth_pipe"),
 	}
 
 	go pam.listenForCommands()

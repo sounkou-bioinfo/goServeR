@@ -2,6 +2,7 @@
 #include <Rinternals.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include "Rserve.h"
 #include "interupt.h"
 
@@ -81,9 +82,23 @@ static void* server_thread_fn(void* arg) {
     // Pass auth pipe FD if auth context exists, otherwise -1
     int auth_pipe_fd = (srv->auth_context) ? srv->auth_context->auth_pipe_fd : -1;
     
+    // Convert pipe file descriptors to platform-appropriate handles.
+    // On Windows, Go's os.NewFile() expects Windows HANDLEs, not CRT file
+    // descriptors. _get_osfhandle() converts CRT FDs to their underlying
+    // Windows HANDLEs. On Unix, FDs are used directly.
+#ifdef _WIN32
+    intptr_t shutdown_handle = _get_osfhandle(srv->shutdown_pipe[0]);
+    intptr_t log_handle = _get_osfhandle(srv->log_pipe[1]);
+    intptr_t auth_handle = (auth_pipe_fd >= 0) ? _get_osfhandle(auth_pipe_fd) : (intptr_t)-1;
+#else
+    intptr_t shutdown_handle = (intptr_t)srv->shutdown_pipe[0];
+    intptr_t log_handle = (intptr_t)srv->log_pipe[1];
+    intptr_t auth_handle = (intptr_t)auth_pipe_fd;
+#endif
+    
     // For backward compatibility, pass empty string for auth_keys
     // Auth is now handled via pipe-based system per server
-    RunServerWithLogging(srv->dirs, srv->addr, srv->prefixes, srv->num_paths, srv->cors, srv->coop, srv->tls, srv->silent, srv->certfile, srv->keyfile, srv->shutdown_pipe[0], srv->log_pipe[1], "", auth_pipe_fd);
+    RunServerWithLogging(srv->dirs, srv->addr, srv->prefixes, srv->num_paths, srv->cors, srv->coop, srv->tls, srv->silent, srv->certfile, srv->keyfile, shutdown_handle, log_handle, "", auth_handle);
     
     // Safely update running status
     LOCK_SERVER_LIST();

@@ -2,6 +2,10 @@
 library(goserveR)
 library(tinytest)
 
+# Set a short timeout for all HTTP operations to prevent hanging on CI
+old_timeout <- getOption("timeout")
+options(timeout = 10)
+on.exit(options(timeout = old_timeout))
 
 # Setup test directory and file
 test_dir <- tempdir()
