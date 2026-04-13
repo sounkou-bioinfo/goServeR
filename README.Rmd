@@ -87,8 +87,8 @@ The package supports both API key authentication and TLS/HTTPS connections. You 
 ```{r auth_tls}
 
 # Get paths to example certificate and key files
-certfile <- system.file("extdata", "cert.pem", package = "goserveR")
-keyfile <- system.file("extdata", "key.pem", package = "goserveR")
+certfile <- file.path(".certs", "cert.pem")
+keyfile <- file.path(".certs", "key.pem")
 # write test file
 writeLines("Hello from goServeR!", "test.txt")
 
@@ -142,13 +142,14 @@ h_https_auth <- runServer(
 
 # Give HTTPS server time to start up and verify it's running
 length(listServers())
-# Test HTTPS with authentication
+# Test HTTPS with authentication (ssl_verifypeer=0 for self-signed certs)
 temp_file_https <- tempfile()
 
-download.file("https://127.0.0.1:8444/test.txt", 
-                destfile = temp_file_https,
-                headers = c("X-API-Key" = "secure_key_123"),
-                quiet = TRUE)
+h <- curl::new_handle(ssl_verifypeer = 0L, ssl_verifyhost = 0L)
+curl::handle_setheaders(h, "X-API-Key" = "secure_key_123")
+curl::curl_download("https://127.0.0.1:8444/test.txt", 
+                     destfile = temp_file_https,
+                     handle = h)
   
 readLines(temp_file_https) 
 

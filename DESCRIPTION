@@ -17,4 +17,5 @@ BugReports: https://github.com/sounkou-bioinfo/goServeR/issues
 RoxygenNote: 7.3.2
 Encoding: UTF-8
 Suggests:
-    tinytest
+    tinytest,
+    curl

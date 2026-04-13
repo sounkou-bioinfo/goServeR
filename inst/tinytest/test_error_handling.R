@@ -57,9 +57,6 @@ expect_error(
 )
 
 # Test 4: Edge case addresses
-# Note: Invalid IPs (like 999.999.999.999) are handled by Go, not R validation
-# They create a server that fails at Go level, which is expected behavior
-
 expect_error(
   runServer(dir = getwd(), addr = "127.0.0.1:99999", blocking = FALSE),
   info = "Invalid port number should error"
@@ -71,31 +68,27 @@ expect_error(
 )
 
 # Test 5: Test shutdown of invalid handle
-if (interactive() || !nzchar(Sys.getenv("CI"))) {
-  # This should not crash, just be a no-op
-  expect_silent(
-    shutdownServer(NULL),
-    info = "Shutting down NULL should be silent"
-  )
+# This should not crash, just be a no-op
+expect_silent(
+  shutdownServer(NULL),
+  info = "Shutting down NULL should be silent"
+)
 
-  # Test double shutdown (should be safe)
-  h <- runServer(
-    dir = getwd(),
-    addr = "127.0.0.1:8250",
-    blocking = FALSE,
-    silent = TRUE
-  )
-  Sys.sleep(0.2)
-  shutdownServer(h)
-  expect_silent(shutdownServer(h), info = "Double shutdown should be silent")
-}
+# Test double shutdown (should be safe)
+h <- runServer(
+  dir = getwd(),
+  addr = "127.0.0.1:8250",
+  blocking = FALSE,
+  silent = TRUE
+)
+Sys.sleep(0.5)
+shutdownServer(h)
+Sys.sleep(0.3)
+expect_silent(shutdownServer(h), info = "Double shutdown should be silent")
 
 # Test 6: listServers when no servers running
-# Clear any remaining servers first
-if (interactive() || !nzchar(Sys.getenv("CI"))) {
-  servers <- listServers()
-  # This might return empty list, which is fine
-  expect_true(is.list(servers), info = "listServers should return a list")
-}
+Sys.sleep(0.5)
+servers <- listServers()
+expect_true(is.list(servers), info = "listServers should return a list")
 
 cat("Error handling tests completed\n")

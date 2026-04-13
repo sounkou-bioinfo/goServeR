@@ -60,14 +60,14 @@ curl -L http://0.0.0.0:8080/${PWD} 2> /dev/null \
 sleep 2
 
 kill -9 $pid
-#> <pointer: 0x5974ba120a00>
-#> [goserveR] 2025/10/26 00:35:06.902380 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> [goserveR] 2025/10/26 00:35:06.902698 Serving 1 directories on http://0.0.0.0:8080
-#> [goserveR] 2025/10/26 00:35:08.579391 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:57562 228.533µs
+#> <pointer: 0x646362ac1d60>
+#> [goserveR] 2026/04/13 21:48:24.063293 Registered handler for directory "/root/goServeR" at prefix "/root/goServeR"
+#> [goserveR] 2026/04/13 21:48:24.063421 Serving 1 directories on http://0.0.0.0:8080
+#> [goserveR] 2026/04/13 21:48:25.941343 GET /root/goServeR/ 127.0.0.1:36034 107.87µs
 #> <pre>
-#> <a href="..Rcheck/">..Rcheck/</a>
 #> <a href=".Rbuildignore">.Rbuildignore</a>
 #> <a href=".Rinstignore">.Rinstignore</a>
+#> <a href=".certs/">.certs/</a>
 #> <a href=".git/">.git/</a>
 ```
 
@@ -82,7 +82,7 @@ runServer(dir = ".", addr = "0.0.0.0:8080", silent = TRUE)
 #> Server started in blocking mode. Press Ctrl+C to interrupt.
 #> Server address: 0.0.0.0:8080
 #> Static files directories: 1 paths
-#>   1: /home/sounkoutoure/Projects/goServeR ->
+#>   1: /root/goServeR ->
 setTimeLimit()
 ```
 
@@ -93,7 +93,7 @@ h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE, silent = TRUE
 listServers() |> str()
 #> List of 1
 #>  $ :List of 10
-#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
+#>   ..$ directory      : chr "/root/goServeR"
 #>   ..$ address        : chr "0.0.0.0:8080"
 #>   ..$ prefix         : chr ""
 #>   ..$ protocol       : chr "HTTP"
@@ -109,9 +109,9 @@ currentDir <- normalizePath(".")
 readLines(paste0("http://0.0.0.0:8080/", currentDir)) |>
   head(10)
 #>  [1] "<pre>"                                                          
-#>  [2] "<a href=\"..Rcheck/\">..Rcheck/</a>"                            
-#>  [3] "<a href=\".Rbuildignore\">.Rbuildignore</a>"                    
-#>  [4] "<a href=\".Rinstignore\">.Rinstignore</a>"                      
+#>  [2] "<a href=\".Rbuildignore\">.Rbuildignore</a>"                    
+#>  [3] "<a href=\".Rinstignore\">.Rinstignore</a>"                      
+#>  [4] "<a href=\".certs/\">.certs/</a>"                                
 #>  [5] "<a href=\".git/\">.git/</a>"                                    
 #>  [6] "<a href=\".github/\">.github/</a>"                              
 #>  [7] "<a href=\".gitignore\">.gitignore</a>"                          
@@ -131,8 +131,8 @@ keys at runtime using `addAuthKey()` and `removeAuthKey()` functions.
 ``` r
 
 # Get paths to example certificate and key files
-certfile <- system.file("extdata", "cert.pem", package = "goserveR")
-keyfile <- system.file("extdata", "key.pem", package = "goserveR")
+certfile <- file.path(".certs", "cert.pem")
+keyfile <- file.path(".certs", "key.pem")
 # write test file
 writeLines("Hello from goServeR!", "test.txt")
 
@@ -196,13 +196,14 @@ h_https_auth <- runServer(
 # Give HTTPS server time to start up and verify it's running
 length(listServers())
 #> [1] 2
-# Test HTTPS with authentication
+# Test HTTPS with authentication (ssl_verifypeer=0 for self-signed certs)
 temp_file_https <- tempfile()
 
-download.file("https://127.0.0.1:8444/test.txt", 
-                destfile = temp_file_https,
-                headers = c("X-API-Key" = "secure_key_123"),
-                quiet = TRUE)
+h <- curl::new_handle(ssl_verifypeer = 0L, ssl_verifyhost = 0L)
+curl::handle_setheaders(h, "X-API-Key" = "secure_key_123")
+curl::curl_download("https://127.0.0.1:8444/test.txt", 
+                     destfile = temp_file_https,
+                     handle = h)
   
 readLines(temp_file_https) 
 #> [1] "Hello from goServeR!"
@@ -210,7 +211,7 @@ readLines(temp_file_https)
 listServers() |> str()
 #> List of 2
 #>  $ :List of 10
-#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
+#>   ..$ directory      : chr "/root/goServeR"
 #>   ..$ address        : chr "127.0.0.1:8090"
 #>   ..$ prefix         : chr "/"
 #>   ..$ protocol       : chr "HTTP"
@@ -222,7 +223,7 @@ listServers() |> str()
 #>   ..$ auth_keys      : chr "enabled"
 #>   ..- attr(*, "class")= chr "server_info"
 #>  $ :List of 10
-#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
+#>   ..$ directory      : chr "/root/goServeR"
 #>   ..$ address        : chr "127.0.0.1:8444"
 #>   ..$ prefix         : chr "/"
 #>   ..$ protocol       : chr "HTTPS"
@@ -255,7 +256,7 @@ h3 <- runServer(dir = ".", addr = "127.0.0.1:8083", blocking = FALSE, silent = T
 listServers() |> str()
 #> List of 3
 #>  $ :List of 10
-#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
+#>   ..$ directory      : chr "/root/goServeR"
 #>   ..$ address        : chr "127.0.0.1:8081"
 #>   ..$ prefix         : chr ""
 #>   ..$ protocol       : chr "HTTP"
@@ -267,7 +268,7 @@ listServers() |> str()
 #>   ..$ auth_keys      : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
 #>  $ :List of 10
-#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
+#>   ..$ directory      : chr "/root/goServeR"
 #>   ..$ address        : chr "127.0.0.1:8082"
 #>   ..$ prefix         : chr ""
 #>   ..$ protocol       : chr "HTTP"
@@ -279,7 +280,7 @@ listServers() |> str()
 #>   ..$ auth_keys      : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
 #>  $ :List of 10
-#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
+#>   ..$ directory      : chr "/root/goServeR"
 #>   ..$ address        : chr "127.0.0.1:8083"
 #>   ..$ prefix         : chr ""
 #>   ..$ protocol       : chr "HTTP"
@@ -296,13 +297,13 @@ listServers() |> str()
 
 #Server 1 (port 8081) 
 length(readLines(paste0("http://127.0.0.1:8081/", normalizePath("."))))
-#> [1] 32
+#> [1] 26
 #Server 2 (port 8082)
 length(readLines(paste0("http://127.0.0.1:8082/", normalizePath("."))))
-#> [1] 32
+#> [1] 26
 #Server 3 (port 8083)
 length(readLines(paste0("http://127.0.0.1:8083/", normalizePath("."))))
-#> [1] 32
+#> [1] 26
 
 # Shutdown all servers
 shutdownServer(h1)
@@ -339,7 +340,7 @@ h_multi <- runServer(
 listServers() |> str()
 #> List of 1
 #>  $ :List of 10
-#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR/test_data, /home/sounkoutoure/Projects/goServeR/test_docs, /home/sounkouto"| __truncated__
+#>   ..$ directory      : chr "/root/goServeR/test_data, /root/goServeR/test_docs, /root/goServeR"
 #>   ..$ address        : chr "127.0.0.1:8090"
 #>   ..$ prefix         : chr "/api/data, /docs, /files"
 #>   ..$ protocol       : chr "HTTP"
@@ -363,7 +364,7 @@ readLines("http://127.0.0.1:8090/docs/doc.txt")
 
 # Files endpoint (current directory)
 length(readLines(paste0("http://127.0.0.1:8090/files/")))
-#> [1] 34
+#> [1] 28
 # Cleanup
 shutdownServer(h_multi)
 unlink(c("test_data", "test_docs"), recursive = TRUE)
@@ -403,7 +404,7 @@ h4 <- runServer(dir = ".", addr = "127.0.0.1:8353", blocking = FALSE, silent = T
 listServers() |> str()
 #> List of 4
 #>  $ :List of 10
-#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
+#>   ..$ directory      : chr "/root/goServeR"
 #>   ..$ address        : chr "127.0.0.1:8350"
 #>   ..$ prefix         : chr ""
 #>   ..$ protocol       : chr "HTTP"
@@ -415,7 +416,7 @@ listServers() |> str()
 #>   ..$ auth_keys      : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
 #>  $ :List of 10
-#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
+#>   ..$ directory      : chr "/root/goServeR"
 #>   ..$ address        : chr "127.0.0.1:8351"
 #>   ..$ prefix         : chr ""
 #>   ..$ protocol       : chr "HTTP"
@@ -427,7 +428,7 @@ listServers() |> str()
 #>   ..$ auth_keys      : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
 #>  $ :List of 10
-#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
+#>   ..$ directory      : chr "/root/goServeR"
 #>   ..$ address        : chr "127.0.0.1:8352"
 #>   ..$ prefix         : chr ""
 #>   ..$ protocol       : chr "HTTP"
@@ -439,7 +440,7 @@ listServers() |> str()
 #>   ..$ auth_keys      : chr "none"
 #>   ..- attr(*, "class")= chr "server_info"
 #>  $ :List of 10
-#>   ..$ directory      : chr "/home/sounkoutoure/Projects/goServeR"
+#>   ..$ directory      : chr "/root/goServeR"
 #>   ..$ address        : chr "127.0.0.1:8353"
 #>   ..$ prefix         : chr ""
 #>   ..$ protocol       : chr "HTTP"
@@ -454,12 +455,12 @@ listServers() |> str()
 
 # let's get the log by making R idle !
 Sys.sleep(5)
-#> [goserveR] 2025/10/26 00:35:16.246111 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/26 00:35:16.246345 Serving 1 directories on http://127.0.0.1:8350
+#> [goserveR] 2026/04/13 21:48:34.379825 Registered handler for directory "/root/goServeR" at prefix "/root/goServeR"
+#> 2026/04/13 21:48:34.379938 Serving 1 directories on http://127.0.0.1:8350
 #> 
-#> *** [CUSTOM-SERVER] *** 2025/10/26 00:35:16.260943 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/26 00:35:16.261027 Serving 1 directories on http://127.0.0.1:8352
-#> 2025/10/26 00:35:16.262892 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:40474 182.156µs
+#> *** [CUSTOM-SERVER] *** 2026/04/13 21:48:34.382061 Registered handler for directory "/root/goServeR" at prefix "/root/goServeR"
+#> 2026/04/13 21:48:34.382078 Serving 1 directories on http://127.0.0.1:8352
+#> 2026/04/13 21:48:34.382453 GET /root/goServeR/ 127.0.0.1:37748 48.165µs
 #>  *** END ***
 shutdownServer(h1)
 shutdownServer(h2)
@@ -471,9 +472,9 @@ shutdownServer(h4)
 if (file.exists(logfile)) {
   cat(readLines(logfile, n = 3), sep = "\n")
 }
-#> [2025-10-26 00:35:16] 2025/10/26 00:35:16.255186 Registered handler for directory "/home/sounkoutoure/Projects/goServeR" at prefix "/home/sounkoutoure/Projects/goServeR"
-#> 2025/10/26 00:35:16.255264 Serving 1 directories on http://127.0.0.1:8351
-#> 2025/10/26 00:35:16.257517 GET /home/sounkoutoure/Projects/goServeR/ 127.0.0.1:57338 248.509µs
+#> [2026-04-13 21:48:34] 2026/04/13 21:48:34.380738 Registered handler for directory "/root/goServeR" at prefix "/root/goServeR"
+#> 2026/04/13 21:48:34.380776 Serving 1 directories on http://127.0.0.1:8351
+#> 2026/04/13 21:48:34.381263 GET /root/goServeR/ 127.0.0.1:37002 63.9µs
 ```
 
 ## On background log handlers

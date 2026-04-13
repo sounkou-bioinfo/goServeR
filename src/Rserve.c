@@ -358,55 +358,79 @@ SEXP run_server(SEXP r_dir, SEXP r_addr, SEXP r_prefix, SEXP r_blocking, SEXP r_
     }
 }
 
+// Per-server snapshot for safe lock-free processing
+typedef struct {
+    char* addr_copy;
+    int num_paths;
+    int tls;
+    int silent;
+    char** dirs_copy;
+    char** prefixes_copy;
+    char* auth_status_copy;
+    char* log_handler_type_copy;
+    char* log_destination_copy;
+    char* log_function_info_copy;
+} server_snapshot_t;
+
+static void free_server_snapshot(server_snapshot_t* snap) {
+    if (!snap) return;
+    if (snap->addr_copy) free(snap->addr_copy);
+    if (snap->auth_status_copy) free(snap->auth_status_copy);
+    if (snap->log_handler_type_copy) free(snap->log_handler_type_copy);
+    if (snap->log_destination_copy) free(snap->log_destination_copy);
+    if (snap->log_function_info_copy) free(snap->log_function_info_copy);
+    if (snap->dirs_copy && snap->prefixes_copy) {
+        for (int j = 0; j < snap->num_paths; j++) {
+            if (snap->dirs_copy[j]) free(snap->dirs_copy[j]);
+            if (snap->prefixes_copy[j]) free(snap->prefixes_copy[j]);
+        }
+    }
+    if (snap->dirs_copy) free(snap->dirs_copy);
+    if (snap->prefixes_copy) free(snap->prefixes_copy);
+}
+
 SEXP list_servers() {
     LOCK_SERVER_LIST();
     
-    // First pass: count active servers and create safe snapshot
+    // Count active servers
     int active_count = 0;
-    go_server_t* active_servers[MAX_SERVERS];
-    
     for (int i = 0; i < MAX_SERVERS; ++i) {
         go_server_t* srv = server_list[i];
         if (srv && srv->running && srv->addr && srv->dirs && srv->prefixes && srv->num_paths > 0) {
-            active_servers[active_count] = srv;
             active_count++;
         }
     }
     
-    SEXP res = PROTECT(allocVector(VECSXP, active_count));
-    int k = 0;
+    // Take a complete snapshot of all server data under the lock
+    server_snapshot_t snapshots[MAX_SERVERS];
+    int snap_count = 0;
     
-    // Second pass: collect server info from snapshot
-    for (int i = 0; i < active_count; ++i) {
-        go_server_t* srv = active_servers[i];
-        
-        // Verify the server is still valid before accessing
-        if (!srv || !srv->running || !srv->dirs || !srv->prefixes || !srv->addr || srv->num_paths <= 0) {
+    for (int i = 0; i < MAX_SERVERS && snap_count < active_count; ++i) {
+        go_server_t* srv = server_list[i];
+        if (!srv || !srv->running || !srv->addr || !srv->dirs || !srv->prefixes || srv->num_paths <= 0) {
             continue;
         }
         
-        SEXP info = PROTECT(allocVector(STRSXP, 9)); // 9 elements for auth info
+        server_snapshot_t* snap = &snapshots[snap_count];
+        snap->addr_copy = strdup(srv->addr);
+        snap->num_paths = srv->num_paths;
+        snap->tls = srv->tls;
+        snap->silent = srv->silent;
         
-        // Create safe local copies while holding the lock
-        char* addr_copy = srv->addr ? strdup(srv->addr) : strdup("unknown");
-        int num_paths_copy = srv->num_paths;
-        int tls_copy = srv->tls;
-        int silent_copy = srv->silent;
+        snap->dirs_copy = (char**)malloc(snap->num_paths * sizeof(char*));
+        snap->prefixes_copy = (char**)malloc(snap->num_paths * sizeof(char*));
         
-        char** dirs_copy = malloc(num_paths_copy * sizeof(char*));
-        char** prefixes_copy = malloc(num_paths_copy * sizeof(char*));
-        
-        for (int j = 0; j < num_paths_copy; j++) {
+        for (int j = 0; j < snap->num_paths; j++) {
             if (srv->dirs[j] && srv->prefixes[j]) {
-                dirs_copy[j] = strdup(srv->dirs[j]);
-                prefixes_copy[j] = strdup(srv->prefixes[j]);
+                snap->dirs_copy[j] = strdup(srv->dirs[j]);
+                snap->prefixes_copy[j] = strdup(srv->prefixes[j]);
             } else {
-                dirs_copy[j] = strdup("unknown");
-                prefixes_copy[j] = strdup("/");
+                snap->dirs_copy[j] = strdup("unknown");
+                snap->prefixes_copy[j] = strdup("/");
             }
         }
         
-        // Store auth context status while holding lock
+        // Snapshot auth status
         const char* auth_status = "none";
         if (srv->auth_context) {
             if (srv->auth_context->num_keys > 0) {
@@ -415,9 +439,9 @@ SEXP list_servers() {
                 auth_status = "configured";
             }
         }
-        char* auth_status_copy = strdup(auth_status);
+        snap->auth_status_copy = strdup(auth_status);
         
-        // Store log handler info while holding lock
+        // Snapshot log handler info
         const char* log_handler_type = "none";
         const char* log_destination = "none";
         const char* log_function_info = "none";
@@ -434,77 +458,70 @@ SEXP list_servers() {
             }
         }
         
-        char* log_handler_type_copy = strdup(log_handler_type);
-        char* log_destination_copy = strdup(log_destination);
-        char* log_function_info_copy = strdup(log_function_info);
+        snap->log_handler_type_copy = strdup(log_handler_type);
+        snap->log_destination_copy = strdup(log_destination);
+        snap->log_function_info_copy = strdup(log_function_info);
         
-    UNLOCK_SERVER_LIST(); // Release lock before string processing
+        snap_count++;
+    }
     
-        // Process the copied data (no more srv access after this point)
+    // Release lock - all data is now in local snapshots
+    UNLOCK_SERVER_LIST();
+    
+    // Build R result from snapshots (no lock needed, no srv access)
+    SEXP res = PROTECT(allocVector(VECSXP, snap_count));
+    
+    for (int i = 0; i < snap_count; ++i) {
+        server_snapshot_t* snap = &snapshots[i];
         
-        // For multiple directories, combine them into a single string representation
-        int dirs_size = 1; // for null terminator
-        int prefixes_size = 1; // for null terminator
-        for (int j = 0; j < num_paths_copy; j++) {
-            if (dirs_copy[j] && prefixes_copy[j]) {
-                dirs_size += strlen(dirs_copy[j]);
-                prefixes_size += strlen(prefixes_copy[j]);
-                if (j > 0) {
-                    dirs_size += 2; // for ", "
-                    prefixes_size += 2; // for ", "
-                }
+        SEXP info = PROTECT(allocVector(STRSXP, 9));
+        
+        // Combine directories into a single string
+        int dirs_size = 1;
+        int prefixes_size = 1;
+        for (int j = 0; j < snap->num_paths; j++) {
+            dirs_size += strlen(snap->dirs_copy[j]);
+            prefixes_size += strlen(snap->prefixes_copy[j]);
+            if (j > 0) {
+                dirs_size += 2;
+                prefixes_size += 2;
             }
         }
         
-        char* combined_dirs = malloc(dirs_size);
-        char* combined_prefixes = malloc(prefixes_size);
+        char* combined_dirs = (char*)malloc(dirs_size);
+        char* combined_prefixes = (char*)malloc(prefixes_size);
         combined_dirs[0] = '\0';
         combined_prefixes[0] = '\0';
         
-        for (int j = 0; j < num_paths_copy; j++) {
-            if (dirs_copy[j] && prefixes_copy[j]) {
-                if (j > 0) {
-                    strcat(combined_dirs, ", ");
-                    strcat(combined_prefixes, ", ");
-                }
-                strcat(combined_dirs, dirs_copy[j]);
-                strcat(combined_prefixes, prefixes_copy[j]);
+        for (int j = 0; j < snap->num_paths; j++) {
+            if (j > 0) {
+                strcat(combined_dirs, ", ");
+                strcat(combined_prefixes, ", ");
             }
+            strcat(combined_dirs, snap->dirs_copy[j]);
+            strcat(combined_prefixes, snap->prefixes_copy[j]);
         }
         
         SET_STRING_ELT(info, 0, mkChar(combined_dirs));
-        SET_STRING_ELT(info, 1, mkChar(addr_copy));
+        SET_STRING_ELT(info, 1, mkChar(snap->addr_copy));
         SET_STRING_ELT(info, 2, mkChar(combined_prefixes));
-        SET_STRING_ELT(info, 3, mkChar(tls_copy ? "HTTPS" : "HTTP"));
-        SET_STRING_ELT(info, 4, mkChar(silent_copy ? "silent" : "logging"));
-        SET_STRING_ELT(info, 5, mkChar(log_handler_type_copy));
-        SET_STRING_ELT(info, 6, mkChar(log_destination_copy));
-        SET_STRING_ELT(info, 7, mkChar(log_function_info_copy));
-        SET_STRING_ELT(info, 8, mkChar(auth_status_copy));
+        SET_STRING_ELT(info, 3, mkChar(snap->tls ? "HTTPS" : "HTTP"));
+        SET_STRING_ELT(info, 4, mkChar(snap->silent ? "silent" : "logging"));
+        SET_STRING_ELT(info, 5, mkChar(snap->log_handler_type_copy));
+        SET_STRING_ELT(info, 6, mkChar(snap->log_destination_copy));
+        SET_STRING_ELT(info, 7, mkChar(snap->log_function_info_copy));
+        SET_STRING_ELT(info, 8, mkChar(snap->auth_status_copy));
         
-        // Clean up all allocated memory
         free(combined_dirs);
         free(combined_prefixes);
-        free(addr_copy);
-        free(auth_status_copy);
-        free(log_handler_type_copy);
-        free(log_destination_copy);
-        free(log_function_info_copy);
         
-        for (int j = 0; j < num_paths_copy; j++) {
-            if (dirs_copy[j]) free(dirs_copy[j]);
-            if (prefixes_copy[j]) free(prefixes_copy[j]);
-        }
-        free(dirs_copy);
-        free(prefixes_copy);
-        
-        SET_VECTOR_ELT(res, k++, info);
+        SET_VECTOR_ELT(res, i, info);
         UNPROTECT(1);
         
-    LOCK_SERVER_LIST(); // Re-acquire lock for next iteration
+        // Free snapshot data
+        free_server_snapshot(snap);
     }
     
-    UNLOCK_SERVER_LIST();
     UNPROTECT(1);
     return res;
 }
@@ -519,8 +536,19 @@ SEXP shutdown_server(SEXP extptr) {
     int was_running = srv->running;
     if (was_running) {
         srv->running = 0;  // Mark as shutting down immediately
-        UNLOCK_SERVER_LIST();
-        
+    }
+    // ALWAYS remove from server list to prevent dangling pointers
+    // even if Go thread already set running=0
+    for (int i = 0; i < MAX_SERVERS; ++i) {
+        if (server_list[i] == srv) {
+            server_list[i] = NULL;
+            server_count--;
+            break;
+        }
+    }
+    UNLOCK_SERVER_LIST();
+    
+    if (was_running) {
         // Remove log handler first to prevent callbacks during shutdown
         if (srv->log_handler != R_NilValue) {
             SEXP goserveR_ns = PROTECT(R_FindNamespace(mkString("goserveR")));
@@ -536,11 +564,6 @@ SEXP shutdown_server(SEXP extptr) {
         // Send shutdown signal and wait for thread to complete
         PIPE_WRITE(srv->shutdown_pipe, "x", 1);
         THREAD_JOIN(srv->thread);
-        
-        // Remove from server list after thread has completed
-        remove_server(srv);
-    } else {
-        UNLOCK_SERVER_LIST();
     }
     return R_NilValue;
 }
@@ -554,8 +577,20 @@ void go_server_finalizer(SEXP extptr) {
     int was_running = srv->running;
     if (was_running) {
         srv->running = 0;  // Mark as shutting down
-        UNLOCK_SERVER_LIST();
-        
+    }
+    // ALWAYS remove from server list before freeing memory
+    // This prevents dangling pointers in server_list when the Go thread
+    // already set running=0 but the server wasn't removed from the list
+    for (int i = 0; i < MAX_SERVERS; ++i) {
+        if (server_list[i] == srv) {
+            server_list[i] = NULL;
+            server_count--;
+            break;
+        }
+    }
+    UNLOCK_SERVER_LIST();
+    
+    if (was_running) {
         // Remove log handler first to prevent callbacks during shutdown
         if (srv->log_handler != R_NilValue) {
             SEXP goserveR_ns = PROTECT(R_FindNamespace(mkString("goserveR")));
@@ -568,11 +603,6 @@ void go_server_finalizer(SEXP extptr) {
         
         PIPE_WRITE(srv->shutdown_pipe, "x", 1);
         THREAD_JOIN(srv->thread);
-        
-        // Remove from server list
-        remove_server(srv);
-    } else {
-        UNLOCK_SERVER_LIST();
     }
     
     // Clean up resources
