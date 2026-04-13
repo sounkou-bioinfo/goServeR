@@ -1,10 +1,24 @@
 library(goserveR)
 library(tinytest)
 
-# Set a short timeout for HTTP operations to prevent hanging on CI
-old_timeout <- getOption("timeout")
-options(timeout = 10)
-on.exit(options(timeout = old_timeout))
+if (!requireNamespace("curl", quietly = TRUE)) {
+  exit_file("curl package not available")
+}
+
+# Helper: fetch URL content with curl and timeout
+curl_get <- function(url, timeout = 5) {
+  h <- curl::new_handle()
+  curl::handle_setopt(h, timeout = timeout, connecttimeout = timeout)
+  tryCatch(
+    {
+      resp <- curl::curl_fetch_memory(url, handle = h)
+      list(status = resp$status_code, content = rawToChar(resp$content), error = NULL)
+    },
+    error = function(e) {
+      list(status = NULL, content = NULL, error = e$message)
+    }
+  )
+}
 
 cat("=== Simple Multiple Directory Integration Test ===\n")
 
@@ -32,29 +46,27 @@ Sys.sleep(1)
 cat("Testing endpoints...\n")
 
 # Test data endpoint
-data_content <- tryCatch(
-  readLines("http://127.0.0.1:8801/data/test.txt"),
-  error = function(e) { cat("HTTP error:", e$message, "\n"); NULL }
-)
-if (!is.null(data_content)) {
+resp_data <- curl_get("http://127.0.0.1:8801/data/test.txt")
+if (is.null(resp_data$error)) {
   expect_equal(
-    data_content,
+    trimws(resp_data$content),
     "data content",
     info = "Data endpoint should return correct content"
   )
+} else {
+  cat("HTTP error (data):", resp_data$error, "\n")
 }
 
 # Test docs endpoint
-docs_content <- tryCatch(
-  readLines("http://127.0.0.1:8801/docs/info.txt"),
-  error = function(e) { cat("HTTP error:", e$message, "\n"); NULL }
-)
-if (!is.null(docs_content)) {
+resp_docs <- curl_get("http://127.0.0.1:8801/docs/info.txt")
+if (is.null(resp_docs$error)) {
   expect_equal(
-    docs_content,
+    trimws(resp_docs$content),
     "docs content",
     info = "Docs endpoint should return correct content"
   )
+} else {
+  cat("HTTP error (docs):", resp_docs$error, "\n")
 }
 
 # Show server info
