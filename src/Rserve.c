@@ -83,13 +83,31 @@ static void* server_thread_fn(void* arg) {
     int auth_pipe_fd = (srv->auth_context) ? srv->auth_context->auth_pipe_fd : -1;
     
     // Convert pipe file descriptors to platform-appropriate handles.
-    // On Windows, Go's os.NewFile() expects Windows HANDLEs, not CRT file
-    // descriptors. _get_osfhandle() converts CRT FDs to their underlying
-    // Windows HANDLEs. On Unix, FDs are used directly.
+    // On Windows, Go's os.NewFile() expects Windows HANDLEs. We use
+    // DuplicateHandle() so Go gets an independent handle to the same pipe
+    // object. This prevents a double-close crash: Go's GC finalizes os.File
+    // objects (calling CloseHandle), and later C's PIPE_CLOSE calls _close()
+    // which also calls CloseHandle on the same underlying HANDLE. With
+    // DuplicateHandle, each side owns its own HANDLE and can close independently.
+    // On Unix, FDs are used directly (double close just returns EBADF).
 #ifdef _WIN32
-    intptr_t shutdown_handle = _get_osfhandle(srv->shutdown_pipe[0]);
-    intptr_t log_handle = _get_osfhandle(srv->log_pipe[1]);
-    intptr_t auth_handle = (auth_pipe_fd >= 0) ? _get_osfhandle(auth_pipe_fd) : (intptr_t)-1;
+    HANDLE proc = GetCurrentProcess();
+    HANDLE dup_shutdown = INVALID_HANDLE_VALUE;
+    HANDLE dup_log = INVALID_HANDLE_VALUE;
+    HANDLE dup_auth = INVALID_HANDLE_VALUE;
+
+    DuplicateHandle(proc, (HANDLE)_get_osfhandle(srv->shutdown_pipe[0]),
+                    proc, &dup_shutdown, 0, FALSE, DUPLICATE_SAME_ACCESS);
+    DuplicateHandle(proc, (HANDLE)_get_osfhandle(srv->log_pipe[1]),
+                    proc, &dup_log, 0, FALSE, DUPLICATE_SAME_ACCESS);
+    if (auth_pipe_fd >= 0) {
+        DuplicateHandle(proc, (HANDLE)_get_osfhandle(auth_pipe_fd),
+                        proc, &dup_auth, 0, FALSE, DUPLICATE_SAME_ACCESS);
+    }
+
+    intptr_t shutdown_handle = (intptr_t)dup_shutdown;
+    intptr_t log_handle = (intptr_t)dup_log;
+    intptr_t auth_handle = (auth_pipe_fd >= 0) ? (intptr_t)dup_auth : (intptr_t)-1;
 #else
     intptr_t shutdown_handle = (intptr_t)srv->shutdown_pipe[0];
     intptr_t log_handle = (intptr_t)srv->log_pipe[1];

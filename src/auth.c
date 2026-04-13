@@ -126,8 +126,14 @@ void cleanup_auth_context(auth_context_t* ctx) {
         ctx->auth_pipe_write_fd = -1;
     }
     
-    // Don't close read end here since Go manages it
-    ctx->auth_pipe_fd = -1;
+    // Close read end pipe safely.
+    // With DuplicateHandle on Windows, Go has its own independent handle,
+    // so C must close its original CRT FD to avoid leaking it.
+    // On Unix, Go already closed this FD, so close() returns EBADF (harmless).
+    if (ctx->auth_pipe_fd >= 0) {
+        PIPE_CLOSE(ctx->auth_pipe_fd);
+        ctx->auth_pipe_fd = -1;
+    }
     
     // Free key strings safely - only free non-NULL pointers
     if (ctx->current_keys) {

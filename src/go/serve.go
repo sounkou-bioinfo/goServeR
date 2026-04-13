@@ -141,12 +141,17 @@ func RunServerWithLogging(cDirs **C.char, cAddr *C.char, cPrefixes **C.char, cNu
 		addr = "0.0.0.0:8080"
 	}
 
-	// Create logger that writes to the log pipe
+	// Create logger that writes to the log pipe.
+	// Always wrap logFd in an os.File so it gets properly closed when we're
+	// done — on Windows the C side passes a DuplicateHandle'd HANDLE that
+	// we own and must close. When silent, we discard output but still close
+	// the file at the end.
+	logFile := os.NewFile(uintptr(logFd), "log-pipe")
 	var logWriter io.Writer
 	if silent {
 		logWriter = io.Discard
 	} else {
-		logWriter = os.NewFile(uintptr(logFd), "log-pipe")
+		logWriter = logFile
 	}
 
 	serveLog := log.New(logWriter, "", log.LstdFlags|log.Lmicroseconds)
@@ -252,6 +257,14 @@ func RunServerWithLogging(cDirs **C.char, cAddr *C.char, cPrefixes **C.char, cNu
 	if serverAuth != nil {
 		serverAuth.close()
 	}
+
+	// Explicitly close the pipe os.File objects NOW, before returning to C.
+	// On Windows, these wrap DuplicateHandle'd HANDLEs that Go owns.
+	// If we don't close them here, Go's GC will close them later via
+	// finalizers — potentially after C has already freed the server struct
+	// or closed its own handles. Closing here is deterministic and safe.
+	shutdownFile.Close()
+	logFile.Close()
 }
 
 // serveLogger logs HTTP requests to the given logger
