@@ -8,7 +8,7 @@ Authors@R: c(
 Description: Provides a lightweight HTTP(S) file server implemented in Go and exposed to R. It supports range
  requests, configurable CORS and COOP headers, and optional TLS. The package builds and runs a background server
  that can be cleanly shut down from R using an OS pipe and C/Go interop. Asynchronous log handling is also supported.
-License: GPL-3 + file LICENSE
+License: GPL (>= 3)
 Depends: R (>= 4.4.0)
 Imports: utils
 SystemRequirements: Go (https://golang.org), GNU make
