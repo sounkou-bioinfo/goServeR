@@ -21,3 +21,4 @@ src/symbols\.rds
 ^libs/.*\.so
 ^inst/libs/.*\.(so|dylib)$
 ^LICENSE\.md$
+^Makefile$
