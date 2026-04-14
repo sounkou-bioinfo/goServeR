@@ -39,14 +39,22 @@ typedef struct bg_log_handler {
     SEXP user;
     SEXP self;
 #ifdef WIN32
+    struct bg_log_message *msg_head;
+    struct bg_log_message *msg_tail;
     HANDLE thread;       /* worker thread */
     CRITICAL_SECTION msg_cs;
     int msg_cs_init;
-    char *pending_msg;
 #else
     InputHandler *ih;    /* worker input handler */
 #endif
 } bg_log_handler_t;
+
+#ifdef WIN32
+typedef struct bg_log_message {
+    struct bg_log_message *next;
+    char *text;
+} bg_log_message_t;
+#endif
 
 static bg_log_handler_t *log_handlers;
 
@@ -103,11 +111,22 @@ static void finalize_log_handler(bg_log_handler_t *h)
         CloseHandle(h->thread);
         h->thread = NULL;
     }
-    if (h->pending_msg) {
-        free(h->pending_msg);
-        h->pending_msg = NULL;
-    }
     if (h->msg_cs_init) {
+        bg_log_message_t *msg;
+
+        EnterCriticalSection(&h->msg_cs);
+        msg = h->msg_head;
+        h->msg_head = NULL;
+        h->msg_tail = NULL;
+        LeaveCriticalSection(&h->msg_cs);
+
+        while (msg) {
+            bg_log_message_t *next = msg->next;
+            free(msg->text);
+            free(msg);
+            msg = next;
+        }
+
         DeleteCriticalSection(&h->msg_cs);
         h->msg_cs_init = 0;
     }
@@ -160,17 +179,25 @@ static void run_log_callback_(void *ptr)
 #ifndef WIN32
     bytes_read = read(h->fd, buffer, sizeof(buffer) - 1);
 #else
+    bg_log_message_t *msg;
+
     EnterCriticalSection(&h->msg_cs);
-    if (!h->pending_msg) {
+    msg = h->msg_head;
+    if (!msg) {
         LeaveCriticalSection(&h->msg_cs);
         return;
     }
-    strncpy(buffer, h->pending_msg, sizeof(buffer) - 1);
-    buffer[sizeof(buffer) - 1] = '\0';
-    free(h->pending_msg);
-    h->pending_msg = NULL;
+    h->msg_head = msg->next;
+    if (!h->msg_head) {
+        h->msg_tail = NULL;
+    }
     LeaveCriticalSection(&h->msg_cs);
+
+    strncpy(buffer, msg->text, sizeof(buffer) - 1);
+    buffer[sizeof(buffer) - 1] = '\0';
     bytes_read = (ssize_t) strlen(buffer);
+    free(msg->text);
+    free(msg);
 #endif
     
     // Check for read errors or closed pipe
@@ -249,19 +276,43 @@ static DWORD WINAPI LogThreadProc(LPVOID lpParameter) {
 
         buffer[bytes_read] = '\0';
 
-        EnterCriticalSection(&h->msg_cs);
-        if (h->pending_msg) {
-            free(h->pending_msg);
-        }
-        h->pending_msg = (char*) calloc((size_t) bytes_read + 1, sizeof(char));
-        if (!h->pending_msg) {
-            LeaveCriticalSection(&h->msg_cs);
+        bg_log_message_t *msg = (bg_log_message_t*) calloc(1, sizeof(bg_log_message_t));
+        if (!msg) {
             break;
         }
-        memcpy(h->pending_msg, buffer, (size_t) bytes_read + 1);
+        msg->text = (char*) calloc((size_t) bytes_read + 1, sizeof(char));
+        if (!msg->text) {
+            free(msg);
+            break;
+        }
+        memcpy(msg->text, buffer, (size_t) bytes_read + 1);
+
+        EnterCriticalSection(&h->msg_cs);
+        if (h->msg_tail) {
+            h->msg_tail->next = msg;
+        } else {
+            h->msg_head = msg;
+        }
+        h->msg_tail = msg;
         LeaveCriticalSection(&h->msg_cs);
 
-        SendMessage(message_window, WM_LOG_CALLBACK, 0, (LPARAM) h);
+        if (!PostMessage(message_window, WM_LOG_CALLBACK, 0, (LPARAM) h)) {
+            EnterCriticalSection(&h->msg_cs);
+            if (h->msg_head == msg) {
+                h->msg_head = msg->next;
+            } else {
+                bg_log_message_t *cur = h->msg_head;
+                while (cur && cur->next != msg) cur = cur->next;
+                if (cur) cur->next = msg->next;
+            }
+            if (h->msg_tail == msg) {
+                h->msg_tail = NULL;
+            }
+            LeaveCriticalSection(&h->msg_cs);
+            free(msg->text);
+            free(msg);
+            break;
+        }
     }
 
     return 0;
@@ -311,7 +362,8 @@ SEXP register_log_handler(SEXP s_fd, SEXP callback, SEXP user)
 #else
     InitializeCriticalSection(&h->msg_cs);
     h->msg_cs_init = 1;
-    h->pending_msg = NULL;
+    h->msg_head = NULL;
+    h->msg_tail = NULL;
     h->thread = CreateThread(NULL, 0, LogThreadProc, (LPVOID) h, 0, 0);
 #endif
     return h->self;
