@@ -19,4 +19,5 @@ src/symbols\.rds
 ^src/.*\.a$
 ^src/go/serve\.a
 ^libs/.*\.so
+^inst/libs/.*\.(so|dylib)$
 ^LICENSE\.md$

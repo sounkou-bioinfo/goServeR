@@ -5,7 +5,7 @@
 #include <Rinternals.h>
 #include <R_ext/Visibility.h>
 #include <stdint.h>
-#include "serve.h"
+#include "libserve.h"
 #include "interupt.h"
 
 #ifdef _WIN32
