@@ -40,6 +40,9 @@ typedef struct bg_log_handler {
     SEXP self;
 #ifdef WIN32
     HANDLE thread;       /* worker thread */
+    CRITICAL_SECTION msg_cs;
+    int msg_cs_init;
+    char *pending_msg;
 #else
     InputHandler *ih;    /* worker input handler */
 #endif
@@ -100,6 +103,14 @@ static void finalize_log_handler(bg_log_handler_t *h)
         CloseHandle(h->thread);
         h->thread = NULL;
     }
+    if (h->pending_msg) {
+        free(h->pending_msg);
+        h->pending_msg = NULL;
+    }
+    if (h->msg_cs_init) {
+        DeleteCriticalSection(&h->msg_cs);
+        h->msg_cs_init = 0;
+    }
 #endif
     
     // Mark FD as invalid to prevent further reads
@@ -149,7 +160,17 @@ static void run_log_callback_(void *ptr)
 #ifndef WIN32
     bytes_read = read(h->fd, buffer, sizeof(buffer) - 1);
 #else
-    bytes_read = _read(h->fd, buffer, sizeof(buffer) - 1);
+    LOCK_LOG_HANDLERS();
+    if (!h->pending_msg) {
+        UNLOCK_LOG_HANDLERS();
+        return;
+    }
+    strncpy(buffer, h->pending_msg, sizeof(buffer) - 1);
+    buffer[sizeof(buffer) - 1] = '\0';
+    free(h->pending_msg);
+    h->pending_msg = NULL;
+    UNLOCK_LOG_HANDLERS();
+    bytes_read = (ssize_t) strlen(buffer);
 #endif
     
     // Check for read errors or closed pipe
@@ -194,7 +215,9 @@ static void run_log_callback(bg_log_handler_t *h)
 #undef run_log_callback
 #endif
 
+#ifndef WIN32
 static void log_input_handler(void *data);
+#endif
 
 #ifdef WIN32
 static LRESULT CALLBACK BackgroundWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -209,19 +232,48 @@ static LRESULT CALLBACK BackgroundWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam
 
 static DWORD WINAPI LogThreadProc(LPVOID lpParameter) {
     bg_log_handler_t *h = (bg_log_handler_t*) lpParameter;
+    char buffer[4096];
+    int bytes_read;
+
     if (!h) return 0;
-    
-    // Windows implementation would need to monitor the pipe/FD
-    // This is a placeholder - full Windows implementation would be more complex
-    
+
+    for (;;) {
+        if (h->fd < 0) {
+            break;
+        }
+
+        bytes_read = _read(h->fd, buffer, sizeof(buffer) - 1);
+        if (bytes_read <= 0) {
+            break;
+        }
+
+        buffer[bytes_read] = '\0';
+
+        EnterCriticalSection(&h->msg_cs);
+        if (h->pending_msg) {
+            free(h->pending_msg);
+        }
+        h->pending_msg = (char*) calloc((size_t) bytes_read + 1, sizeof(char));
+        if (!h->pending_msg) {
+            LeaveCriticalSection(&h->msg_cs);
+            break;
+        }
+        memcpy(h->pending_msg, buffer, (size_t) bytes_read + 1);
+        LeaveCriticalSection(&h->msg_cs);
+
+        SendMessage(message_window, WM_LOG_CALLBACK, 0, (LPARAM) h);
+    }
+
     return 0;
 }
 #endif
 
+#ifndef WIN32
 static void log_input_handler(void *data)
 {
     run_log_callback((bg_log_handler_t*) data);
 }
+#endif
 
 /* Register a log handler for a file descriptor */
 SEXP register_log_handler(SEXP s_fd, SEXP callback, SEXP user)
@@ -257,6 +309,9 @@ SEXP register_log_handler(SEXP s_fd, SEXP callback, SEXP user)
     h->ih = addInputHandler(R_InputHandlers, fd, &log_input_handler, BackgroundActivity);
     if (h->ih) h->ih->userData = h;
 #else
+    InitializeCriticalSection(&h->msg_cs);
+    h->msg_cs_init = 1;
+    h->pending_msg = NULL;
     h->thread = CreateThread(NULL, 0, LogThreadProc, (LPVOID) h, 0, 0);
 #endif
     return h->self;

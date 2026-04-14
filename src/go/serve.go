@@ -25,8 +25,9 @@ package main
 typedef intptr_t go_pipe_handle_t;
 
 // Helper function to access elements of a C string array.
-// This avoids unsafe pointer arithmetic in Go.
-static char* get_string_at(char** arr, int i) {
+// Mark it unused because the generated header is included by C translation
+// units that don't call it directly, even though cgo does.
+static char* __attribute__((unused)) get_string_at(char** arr, int i) {
     return arr[i];
 }
 */
