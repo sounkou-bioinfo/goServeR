@@ -160,16 +160,16 @@ static void run_log_callback_(void *ptr)
 #ifndef WIN32
     bytes_read = read(h->fd, buffer, sizeof(buffer) - 1);
 #else
-    LOCK_LOG_HANDLERS();
+    EnterCriticalSection(&h->msg_cs);
     if (!h->pending_msg) {
-        UNLOCK_LOG_HANDLERS();
+        LeaveCriticalSection(&h->msg_cs);
         return;
     }
     strncpy(buffer, h->pending_msg, sizeof(buffer) - 1);
     buffer[sizeof(buffer) - 1] = '\0';
     free(h->pending_msg);
     h->pending_msg = NULL;
-    UNLOCK_LOG_HANDLERS();
+    LeaveCriticalSection(&h->msg_cs);
     bytes_read = (ssize_t) strlen(buffer);
 #endif
     
