@@ -1,6 +1,76 @@
 #' @useDynLib goserveR, .registration = TRUE
 NULL
 
+#' Generate TLS credentials with 'nanonext'
+#'
+#' Generates a self-signed X.509 certificate and private key as PEM using
+#' \code{nanonext::write_cert()}, then writes them to temporary files accepted by
+#' Go's HTTPS server. The private-key file is restricted to the current user on
+#' platforms that support Unix-style file modes.
+#'
+#' @param cn Certificate common name, usually the server host name or IP address.
+#' @param valid Certificate expiry in \code{yyyymmddhhmmss} format.
+#' @param directory Directory in which to create the temporary PEM files.
+#' @return A \code{goserveR_tls_certificate} object containing the in-memory
+#'   PEM values and the \code{certfile} and \code{keyfile} paths. Pass the
+#'   object directly to the \code{tls} argument of \code{runServer()}.
+#' @export
+createTLSCertificate <- function(
+    cn = "127.0.0.1",
+    valid = "20301231235959",
+    directory = tempdir()) {
+  if (!requireNamespace("nanonext", quietly = TRUE)) {
+    stop("Package 'nanonext' is required to generate TLS credentials.")
+  }
+  if (!is.character(directory) || length(directory) != 1L || is.na(directory)) {
+    stop("directory must be a single path")
+  }
+  if (!dir.exists(directory) && !dir.create(directory, recursive = TRUE)) {
+    stop("Could not create TLS credential directory: ", directory)
+  }
+
+  pem <- nanonext::write_cert(cn = cn, valid = valid)
+  if (!is.list(pem) || length(pem$server) != 2L) {
+    stop("nanonext did not return a certificate/private-key PEM pair")
+  }
+
+  certfile <- tempfile("goserveR-cert-", tmpdir = directory, fileext = ".pem")
+  keyfile <- tempfile("goserveR-key-", tmpdir = directory, fileext = ".pem")
+  complete <- FALSE
+  on.exit({
+    if (!complete) unlink(c(certfile, keyfile), force = TRUE)
+  }, add = TRUE)
+
+  writeLines(pem$server[[1L]], certfile, useBytes = TRUE)
+  writeLines(pem$server[[2L]], keyfile, useBytes = TRUE)
+  Sys.chmod(keyfile, mode = "0600", use_umask = FALSE)
+  complete <- TRUE
+
+  structure(
+    list(
+      certfile = certfile,
+      keyfile = keyfile,
+      server = pem$server,
+      client = pem$client
+    ),
+    class = "goserveR_tls_certificate"
+  )
+}
+
+#' Delete generated TLS credential files
+#'
+#' @param credentials An object returned by \code{createTLSCertificate()}.
+#' @return Invisibly, \code{TRUE} if neither credential file remains.
+#' @export
+removeTLSCertificate <- function(credentials) {
+  if (!inherits(credentials, "goserveR_tls_certificate")) {
+    stop("credentials must be returned by createTLSCertificate()")
+  }
+  paths <- unlist(credentials[c("certfile", "keyfile")], use.names = FALSE)
+  unlink(paths, force = TRUE)
+  invisible(!any(file.exists(paths)))
+}
+
 #' runServer
 #'
 #' Run the go http server (blocking or background)
@@ -11,7 +81,8 @@ NULL
 #' @param blocking logical, if FALSE runs in background and returns a handle
 #' @param cors logical, enable CORS headers
 #' @param coop logical, enable COOP/COEP headers
-#' @param tls logical, enable TLS (HTTPS)
+#' @param tls Logical to enable TLS (HTTPS), or an object returned by
+#'   \code{createTLSCertificate()} to enable TLS with generated PEM credentials.
 #' @param certfile path to TLS certificate file
 #' @param keyfile path to TLS key file
 #' @param silent logical, suppress server logs
@@ -93,6 +164,12 @@ runServer <- function(
     initial_keys = c(),
     mustWork = FALSE,
     ...) {
+  if (inherits(tls, "goserveR_tls_certificate")) {
+    certfile <- tls$certfile
+    keyfile <- tls$keyfile
+    tls <- TRUE
+  }
+
   # Normalize paths to prevent basic traversal
   if (length(dir) == 1) {
     dir <- normalizePath(dir, mustWork = TRUE)
@@ -123,12 +200,22 @@ runServer <- function(
     is.logical(mustWork) && length(mustWork) == 1
   )
 
+  if (tls && (!file.exists(certfile) || !file.exists(keyfile))) {
+    stop("TLS certificate and private-key files must exist")
+  }
+
   # Validate auth parameters
   if (!is.null(auth_keys) && !is.character(auth_keys)) {
     stop("auth_keys must be a character vector or NULL")
   }
   if (!is.null(initial_keys) && !is.character(initial_keys)) {
     stop("initial_keys must be a character vector or NULL")
+  }
+  if (length(auth_keys)) {
+    auth_keys <- vapply(auth_keys, .validate_auth_key, character(1L))
+  }
+  if (length(initial_keys)) {
+    initial_keys <- vapply(initial_keys, .validate_auth_key, character(1L))
   }
 
   # Validate log_handler if provided
@@ -646,6 +733,16 @@ as.data.frame.server_list <- function(x, ...) {
   )
 }
 
+.validate_auth_key <- function(key, name = "key") {
+  if (!is.character(key) || length(key) != 1L || is.na(key) || !nzchar(key)) {
+    stop(name, " must be a single non-empty character string")
+  }
+  if (grepl("\r", key, fixed = TRUE) || grepl("\n", key, fixed = TRUE)) {
+    stop(name, " must not contain newline characters")
+  }
+  key
+}
+
 #' Add Authentication Key
 #'
 #' Add an API key to the authentication system
@@ -662,8 +759,46 @@ addAuthKey <- function(server_handle, key) {
   if (!inherits(server_handle, "externalptr")) {
     stop("Invalid server handle")
   }
+  key <- .validate_auth_key(key)
 
   .Call(RC_manage_server_auth, server_handle, key, "ADD")
+  invisible(TRUE)
+}
+
+#' Update an Authentication Key
+#'
+#' Replaces an existing API key while keeping the replacement valid throughout
+#' the operation by adding the new key before removing the old key.
+#'
+#' @param server_handle External pointer from
+#'   \code{runServer(blocking = FALSE, auth = TRUE)}.
+#' @param old_key Existing API key.
+#' @param new_key Replacement API key.
+#' @return Invisible \code{TRUE}.
+#' @export
+updateAuthKey <- function(server_handle, old_key, new_key) {
+  if (missing(server_handle) || missing(old_key) || missing(new_key)) {
+    stop("server_handle, old_key, and new_key are required")
+  }
+  if (!inherits(server_handle, "externalptr")) {
+    stop("Invalid server handle")
+  }
+  old_key <- .validate_auth_key(old_key, "old_key")
+  new_key <- .validate_auth_key(new_key, "new_key")
+
+  keys <- listAuthKeys(server_handle)
+  if (!old_key %in% keys) {
+    stop("old_key does not exist")
+  }
+  if (identical(old_key, new_key)) {
+    return(invisible(TRUE))
+  }
+  if (new_key %in% keys) {
+    stop("new_key already exists")
+  }
+
+  .Call(RC_manage_server_auth, server_handle, new_key, "ADD")
+  .Call(RC_manage_server_auth, server_handle, old_key, "REMOVE")
   invisible(TRUE)
 }
 
@@ -683,6 +818,7 @@ removeAuthKey <- function(server_handle, key) {
   if (!inherits(server_handle, "externalptr")) {
     stop("Invalid server handle")
   }
+  key <- .validate_auth_key(key)
 
   .Call(RC_manage_server_auth, server_handle, key, "REMOVE")
   invisible(TRUE)

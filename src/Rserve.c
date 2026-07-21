@@ -7,6 +7,7 @@
 #include "interupt.h"
 
 #ifdef _WIN32
+#include "serve.h"
 #include <windows.h>
 #include <io.h>
 #include <fcntl.h>
@@ -19,6 +20,7 @@
 #define PIPE_WRITE(p, buf, n) do { int _wr = _write((p)[1], (buf), (n)); if (_wr < 0) {} } while(0)
 #define PIPE_CLOSE(p) { _close((p)[0]); _close((p)[1]); }
 #else
+#include "libserve.h"
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/types.h>

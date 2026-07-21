@@ -1,20 +1,24 @@
 PKG_CFLAGS = -I$(CURDIR)
-# Use -DWIN32 for conditional compilation in C code
 PKG_CPPFLAGS = -DWIN32 -D_WIN32
-PKG_LIBS = -L$(CURDIR) $(CURDIR)/serve.a -lws2_32 -lwinmm
+PKG_LIBS = $(CURDIR)/serve.a -lws2_32 -lwinmm
 SRCDIR = $(CURDIR)
-GO = $(shell which go)
+GO = $(shell command -v go 2>/dev/null)
 GOSRC_DIR = $(SRCDIR)/go
 GO_SRCS = $(wildcard $(GOSRC_DIR)/*.go)
 C_SRCS = init.c Rserve.c interupt.c background.c auth.c
 C_OBJS = $(patsubst %.c,%.o,$(C_SRCS))
-OBJECTS = serve.a $(C_OBJS)
 
-$(SHLIB): $(OBJECTS)
+# Keep the Go archive out of OBJECTS. R's symbol-table generation expects
+# ordinary object files there and can fail while inspecting a Go archive.
+OBJECTS = $(C_OBJS)
 
-# First build the Go archive to generate serve.h
+$(SHLIB): serve.a $(C_OBJS)
+
+# Building the cgo archive also generates serve.h, which Rserve.c includes.
+Rserve.o: serve.a
+
 serve.a: $(GO_SRCS)
-	echo $(GO) && \
+	test -n "$(GO)" || { echo "Go is required to build goserveR" >&2; exit 1; }
 	CGO_CFLAGS="-I$(SRCDIR)" \
 	$(GO) build -buildmode=c-archive -ldflags="-s -w" -o $@ $(GOSRC_DIR)/serve.go
 

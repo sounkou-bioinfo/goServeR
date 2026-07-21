@@ -14,8 +14,9 @@ Imports: utils
 SystemRequirements: Go (https://golang.org), GNU make
 URL: https://github.com/sounkou-bioinfo/goServeR
 BugReports: https://github.com/sounkou-bioinfo/goServeR/issues
-RoxygenNote: 7.3.2
 Encoding: UTF-8
 Suggests:
-    tinytest,
-    curl
+    curl,
+    nanonext,
+    tinytest
+Config/roxygen2/version: 8.0.0

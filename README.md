@@ -67,7 +67,6 @@ kill -9 $pid
 #> <pre>
 #> <a href=".Rbuildignore">.Rbuildignore</a>
 #> <a href=".Rinstignore">.Rinstignore</a>
-#> <a href=".certs/">.certs/</a>
 #> <a href=".git/">.git/</a>
 ```
 
@@ -111,7 +110,6 @@ readLines(paste0("http://0.0.0.0:8080/", currentDir)) |>
 #>  [1] "<pre>"                                                          
 #>  [2] "<a href=\".Rbuildignore\">.Rbuildignore</a>"                    
 #>  [3] "<a href=\".Rinstignore\">.Rinstignore</a>"                      
-#>  [4] "<a href=\".certs/\">.certs/</a>"                                
 #>  [5] "<a href=\".git/\">.git/</a>"                                    
 #>  [6] "<a href=\".github/\">.github/</a>"                              
 #>  [7] "<a href=\".gitignore\">.gitignore</a>"                          
@@ -125,14 +123,14 @@ shutdownServer(h)
 
 The package supports both API key authentication and TLS/HTTPS
 connections. You can use them separately or together for secure
-authenticated file serving. You can also add or remove authentication
-keys at runtime using `addAuthKey()` and `removeAuthKey()` functions.
+authenticated file serving. Background servers provide runtime key CRUD
+through `addAuthKey()`, `listAuthKeys()`, `updateAuthKey()`,
+`removeAuthKey()`, and `clearAuthKeys()`.
 
 ``` r
 
-# Get paths to example certificate and key files
-certfile <- file.path(".certs", "cert.pem")
-keyfile <- file.path(".certs", "key.pem")
+# Generate an in-memory PEM certificate/key pair and temporary files.
+tls_credentials <- createTLSCertificate(cn = "127.0.0.1")
 # write test file
 writeLines("Hello from goServeR!", "test.txt")
 
@@ -152,15 +150,21 @@ download.file("http://127.0.0.1:8090/test.txt",
 
 readLines(temp_file)
 #> [1] "Hello from goServeR!"
+
+# Add, inspect, and rotate a key without restarting the server.
 addAuthKey(h_http_auth, "newkey789")
-# Test with new key
+listAuthKeys(h_http_auth)
+#> [1] "secret123"  "token456"  "newkey789"
+updateAuthKey(h_http_auth, "newkey789", "rotated_key_789")
+
+# Test with the replacement key.
 download.file("http://127.0.0.1:8090/test.txt", 
               destfile = temp_file,
-              headers = c("X-API-Key" = "newkey789"),
+              headers = c("X-API-Key" = "rotated_key_789"),
               quiet = TRUE)
-
 readLines(temp_file)
 #> [1] "Hello from goServeR!"
+removeAuthKey(h_http_auth, "rotated_key_789")
 
 unlink(temp_file)
 # Test wrong key should fail
@@ -184,10 +188,8 @@ tryCatch({
 h_https_auth <- runServer(
   dir = ".", 
   addr = "127.0.0.1:8444", 
-  tls = TRUE,
+  tls = tls_credentials,
   prefix = "/",
-  certfile = certfile,
-  keyfile = keyfile,
   auth_keys = c("secure_key_123"),
   blocking = FALSE,
   silent = TRUE
@@ -239,6 +241,7 @@ listServers() |> str()
 # Cleanup
 shutdownServer(h_http_auth)
 shutdownServer(h_https_auth)
+removeTLSCertificate(tls_credentials)
 unlink("test.txt")
 ```
 
@@ -498,42 +501,31 @@ pattern](https://github.com/s-u/background).
 
 ## On TLS Certificates
 
-**Note**: The included certificate files are for testing purposes only
-and should not be used in production. For development with
-browser-trusted certificates, use `mkcert` to generate locally-trusted
-certificates:
+`createTLSCertificate()` uses `nanonext::write_cert()` to generate a
+self-signed X.509 certificate and private key directly as PEM. It writes
+temporary files for Go’s HTTPS server, so no external
+certificate-generation tool or bundled private key is needed.
 
-``` bash
-# Install mkcert (creates locally-trusted development certificates)
-# On macOS: brew install mkcert
-# On Linux: see https://github.com/FiloSottile/mkcert#installation
-
-# Install the local CA in the system trust store
-mkcert -install
-
-# Generate certificate for localhost and local IP
-mkcert localhost 127.0.0.1 ::1
-
-# This creates localhost+2.pem (certificate) and localhost+2-key.pem (private key)
-# Use these files with the certfile and keyfile parameters
+``` r
+credentials <- createTLSCertificate(cn = "127.0.0.1")
+server <- runServer(
+  dir = ".",
+  addr = "127.0.0.1:8443",
+  tls = credentials,
+  blocking = FALSE
+)
+shutdownServer(server)
+removeTLSCertificate(credentials)
 ```
 
-For production use, get proper certificates from a Certificate Authority
-like Let’s Encrypt:
-
-``` bash
-# Using certbot for Let's Encrypt (example for Apache/nginx)
-sudo certbot --nginx -d yourdomain.com
-
-# Or generate self-signed certificates (browsers will show warnings)
-openssl genpkey -algorithm RSA -out server.key -pkcs8
-openssl req -new -x509 -key server.key -out server.crt -days 365
-```
+Self-signed certificates are appropriate for tests and controlled
+clients but are not automatically browser-trusted. For public production
+HTTPS, supply `certfile` and `keyfile` issued by a trusted Certificate
+Authority such as Let’s Encrypt.
 
 ## REFERENCES
 
-- [Calling Go from
-  R](https://purrple.cat/blog/2017/05/14/calling-go-from-r)
+- [Go build modes](https://pkg.go.dev/cmd/go#hdr-Build_modes)
 - [Go FFI](https://mahowald.github.io/go-ffi/)
 - [Background C Code](https://github.com/s-u/background)
 - [R Extensions

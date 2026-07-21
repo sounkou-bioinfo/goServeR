@@ -42,8 +42,10 @@ typedef struct bg_log_handler {
     struct bg_log_message *msg_head;
     struct bg_log_message *msg_tail;
     HANDLE thread;       /* worker thread */
+    HANDLE stop_event;   /* asks the worker to stop without TerminateThread */
     CRITICAL_SECTION msg_cs;
     int msg_cs_init;
+    volatile LONG closing;
 #else
     InputHandler *ih;    /* worker input handler */
 #endif
@@ -102,14 +104,34 @@ static void finalize_log_handler(bg_log_handler_t *h)
         h->ih = NULL;
     }
 #else
-    // Clean up Windows thread if needed
+    /*
+     * Never use TerminateThread here. The worker may hold msg_cs when it is
+     * terminated, which leaves the critical section permanently locked and
+     * deadlocks shutdown. The worker polls the pipe and this event instead.
+     */
+    InterlockedExchange(&h->closing, 1);
+    if (h->stop_event)
+        SetEvent(h->stop_event);
     if (h->thread) {
-        DWORD ts = 0;
-        if (GetExitCodeThread(h->thread, &ts) && ts == STILL_ACTIVE) {
-            TerminateThread(h->thread, 0);
-        }
+        WaitForSingleObject(h->thread, INFINITE);
         CloseHandle(h->thread);
         h->thread = NULL;
+    }
+
+    /* The worker has stopped, so no new callbacks can be posted. Remove any
+       callbacks for this handler before its memory is released. */
+    if (message_window) {
+        MSG win_msg;
+        while (PeekMessage(&win_msg, message_window, WM_LOG_CALLBACK,
+                           WM_LOG_CALLBACK, PM_REMOVE)) {
+            if ((bg_log_handler_t*) win_msg.lParam != h)
+                DispatchMessage(&win_msg);
+        }
+    }
+
+    if (h->stop_event) {
+        CloseHandle(h->stop_event);
+        h->stop_event = NULL;
     }
     if (h->msg_cs_init) {
         bg_log_message_t *msg;
@@ -156,11 +178,6 @@ static void finalize_log_handler(bg_log_handler_t *h)
 
 #ifdef WIN32
 static void run_log_callback_main_thread(bg_log_handler_t *h);
-
-static void run_log_callback(bg_log_handler_t *h)
-{
-    SendMessage(message_window, WM_LOG_CALLBACK, 0, (LPARAM) h);
-}
 #define run_log_callback run_log_callback_main_thread
 #endif
 
@@ -251,7 +268,8 @@ static LRESULT CALLBACK BackgroundWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam
 {
     if (hwnd == message_window && uMsg == WM_LOG_CALLBACK) {
         bg_log_handler_t *h = (bg_log_handler_t*) lParam;
-        run_log_callback_main_thread(h);
+        if (h && InterlockedCompareExchange(&h->closing, 0, 0) == 0)
+            run_log_callback_main_thread(h);
         return 0;
     }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -259,27 +277,46 @@ static LRESULT CALLBACK BackgroundWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam
 
 static DWORD WINAPI LogThreadProc(LPVOID lpParameter) {
     bg_log_handler_t *h = (bg_log_handler_t*) lpParameter;
+    HANDLE pipe_handle;
     char buffer[4096];
-    int bytes_read;
 
     if (!h) return 0;
 
+    pipe_handle = (HANDLE) _get_osfhandle(h->fd);
+    if (pipe_handle == INVALID_HANDLE_VALUE) return 0;
+
     for (;;) {
-        if (h->fd < 0) {
+        DWORD available = 0;
+        DWORD wait_status = WaitForSingleObject(h->stop_event, 10);
+        int bytes_read;
+
+        if (wait_status != WAIT_TIMEOUT ||
+            InterlockedCompareExchange(&h->closing, 0, 0) != 0 ||
+            h->fd < 0) {
             break;
         }
 
-        bytes_read = _read(h->fd, buffer, sizeof(buffer) - 1);
-        if (bytes_read <= 0) {
+        /* Avoid a blocking _read so finalization can always stop and join the
+           worker. Anonymous Windows pipes support PeekNamedPipe. */
+        if (!PeekNamedPipe(pipe_handle, NULL, 0, NULL, &available, NULL))
             break;
-        }
+        if (available == 0)
+            continue;
 
+        bytes_read = _read(h->fd, buffer,
+                           available < sizeof(buffer) - 1
+                               ? (unsigned int) available
+                               : (unsigned int) sizeof(buffer) - 1);
+        if (bytes_read <= 0)
+            break;
         buffer[bytes_read] = '\0';
 
-        bg_log_message_t *msg = (bg_log_message_t*) calloc(1, sizeof(bg_log_message_t));
-        if (!msg) {
+        if (InterlockedCompareExchange(&h->closing, 0, 0) != 0)
             break;
-        }
+
+        bg_log_message_t *msg = (bg_log_message_t*) calloc(1, sizeof(bg_log_message_t));
+        if (!msg)
+            break;
         msg->text = (char*) calloc((size_t) bytes_read + 1, sizeof(char));
         if (!msg->text) {
             free(msg);
@@ -288,25 +325,30 @@ static DWORD WINAPI LogThreadProc(LPVOID lpParameter) {
         memcpy(msg->text, buffer, (size_t) bytes_read + 1);
 
         EnterCriticalSection(&h->msg_cs);
-        if (h->msg_tail) {
+        if (h->msg_tail)
             h->msg_tail->next = msg;
-        } else {
+        else
             h->msg_head = msg;
-        }
         h->msg_tail = msg;
         LeaveCriticalSection(&h->msg_cs);
 
         if (!PostMessage(message_window, WM_LOG_CALLBACK, 0, (LPARAM) h)) {
+            bg_log_message_t *cur;
+            bg_log_message_t *prev = NULL;
+
             EnterCriticalSection(&h->msg_cs);
-            if (h->msg_head == msg) {
-                h->msg_head = msg->next;
-            } else {
-                bg_log_message_t *cur = h->msg_head;
-                while (cur && cur->next != msg) cur = cur->next;
-                if (cur) cur->next = msg->next;
+            cur = h->msg_head;
+            while (cur && cur != msg) {
+                prev = cur;
+                cur = cur->next;
             }
-            if (h->msg_tail == msg) {
-                h->msg_tail = NULL;
+            if (cur) {
+                if (prev)
+                    prev->next = cur->next;
+                else
+                    h->msg_head = cur->next;
+                if (h->msg_tail == cur)
+                    h->msg_tail = prev;
             }
             LeaveCriticalSection(&h->msg_cs);
             free(msg->text);
@@ -364,7 +406,13 @@ SEXP register_log_handler(SEXP s_fd, SEXP callback, SEXP user)
     h->msg_cs_init = 1;
     h->msg_head = NULL;
     h->msg_tail = NULL;
+    h->closing = 0;
+    h->stop_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+    if (!h->stop_event)
+        Rf_error("failed to create log-handler stop event");
     h->thread = CreateThread(NULL, 0, LogThreadProc, (LPVOID) h, 0, 0);
+    if (!h->thread)
+        Rf_error("failed to create log-handler worker thread");
 #endif
     return h->self;
 }

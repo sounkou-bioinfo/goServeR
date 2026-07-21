@@ -39,12 +39,21 @@ keys <- listAuthKeys(server)
 expect_equal(length(keys), 3)
 expect_true("new_dynamic_key" %in% keys)
 
-# Test 5: Clear all keys
+# Test 5: Update an existing auth key
+expect_silent(updateAuthKey(server, "new_dynamic_key", "replacement_key"))
+keys <- listAuthKeys(server)
+expect_false("new_dynamic_key" %in% keys)
+expect_true("replacement_key" %in% keys)
+expect_error(updateAuthKey(server, "missing_key", "another_key"))
+expect_error(updateAuthKey(server, "replacement_key", "test_key_2"))
+expect_error(addAuthKey(server, "bad\nkey"))
+
+# Test 6: Clear all keys
 expect_silent(clearAuthKeys(server))
 keys <- listAuthKeys(server)
 expect_equal(length(keys), 0)
 
-# Test 6: Add duplicate keys (should not error)
+# Test 7: Add duplicate keys (should not error)
 expect_silent(addAuthKey(server, "dup_key"))
 expect_silent(addAuthKey(server, "dup_key")) # Adding same key again
 keys <- listAuthKeys(server)
@@ -52,24 +61,26 @@ keys <- listAuthKeys(server)
 expect_equal(length(keys), 1)
 expect_true("dup_key" %in% keys)
 
-# Test 7: Remove non-existent key (should not error)
+# Test 8: Remove non-existent key (should not error)
 # Ensure server object is still valid before this test
 expect_true(inherits(server, "externalptr"))
 expect_silent(removeAuthKey(server, "non_existent_key"))
 
-# Test 8: Error handling - invalid server handles
+# Test 9: Error handling - invalid server handles
 expect_error(addAuthKey("invalid", "key"))
+expect_error(updateAuthKey("invalid", "old", "new"))
 expect_error(removeAuthKey("invalid", "key"))
 expect_error(listAuthKeys("invalid"))
 expect_error(clearAuthKeys("invalid"))
 
-# Test 9: Error handling - missing parameters
+# Test 10: Error handling - missing parameters
 expect_error(addAuthKey())
+expect_error(updateAuthKey())
 expect_error(removeAuthKey())
 expect_error(listAuthKeys())
 expect_error(clearAuthKeys())
 
-# Test 10: Integration test - create server without auth, should error
+# Test 11: Integration test - create server without auth, should error
 server_no_auth <- runServer(
   dir = temp_dir,
   addr = "127.0.0.1:8194",

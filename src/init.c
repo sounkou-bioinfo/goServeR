@@ -2,8 +2,6 @@
 #include <R_ext/Rdynload.h>
 #include <R_ext/Boolean.h>
 #include <stdlib.h>
-#include "Rserve.h"
-#include <signal.h>
 
 // Make sure the declaration matches the implementation
 SEXP run_server(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);

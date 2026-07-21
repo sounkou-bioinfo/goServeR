@@ -1,43 +1,58 @@
 PKG_CFLAGS = -I$(CURDIR)
 SRCDIR = $(CURDIR)
-GO = $(shell which go)
+
+# webR cannot create listening sockets or build a cgo shared library. Build a
+# small native shim so the package can still be installed and loaded in webR;
+# attempts to start a server fail with an informative R error.
+ifneq (,$(findstring emcc,$(CC)))
+OBJECTS = init.o wasm.o
+
+else
+GO = $(shell command -v go 2>/dev/null)
 UNAME_S = $(shell uname -s)
 SHLIB_EXT = $(shell $(R_HOME)/bin/R CMD config SHLIB_EXT)
 GO_SONAME = libserve$(SHLIB_EXT)
-GO_SHARED_LIB = $(SRCDIR)/$(GO_SONAME)
-INST_LIB_DIR = $(abspath $(SRCDIR)/../inst/libs)
-INST_GO_SHARED_LIB = $(INST_LIB_DIR)/$(GO_SONAME)
+# Use a non-standard suffix in src so R does not install the Go runtime beside
+# goserveR's registered native library. It is copied to inst/go with its normal
+# platform suffix and found through the package-relative rpath.
+GO_BUILD_LIB = $(SRCDIR)/libserve.bin
+INST_GO_LIB_DIR = $(abspath $(SRCDIR)/../inst/go)
+INST_GO_SHARED_LIB = $(INST_GO_LIB_DIR)/$(GO_SONAME)
 GOSRC_DIR = $(SRCDIR)/go
 GO_SRCS = $(wildcard $(GOSRC_DIR)/*.go)
 C_SRCS = init.c Rserve.c interupt.c background.c auth.c
 C_OBJS = $(patsubst %.c,%.o,$(C_SRCS))
-OBJECTS = $(GO_SHARED_LIB) $(C_OBJS)
+OBJECTS = $(C_OBJS)
 
 ifeq ($(UNAME_S),Darwin)
-RPATH_FLAGS = -Wl,-rpath,@loader_path
+RPATH_FLAGS = -Wl,-rpath,@loader_path/../go
 GO_LDFLAGS = -extldflags=-Wl,-install_name,@rpath/$(GO_SONAME)
 THREAD_LIBS =
 else
-RPATH_FLAGS = -Wl,-rpath,'$$ORIGIN'
-GO_LDFLAGS =
+RPATH_FLAGS = -Wl,-rpath,'$$ORIGIN/../go'
+GO_LDFLAGS = -extldflags=-Wl,-soname,$(GO_SONAME)
 THREAD_LIBS = -lpthread
 endif
 
-PKG_LIBS = -L$(INST_LIB_DIR) -lserve $(RPATH_FLAGS) $(THREAD_LIBS)
+PKG_LIBS = $(GO_BUILD_LIB) $(RPATH_FLAGS) $(THREAD_LIBS)
 
-$(SHLIB): $(OBJECTS)
+$(SHLIB): $(INST_GO_SHARED_LIB) $(C_OBJS)
 
-libserve.h: $(GO_SHARED_LIB)
+# Building the cgo library also generates libserve.h, which Rserve.c includes.
+Rserve.o: $(GO_BUILD_LIB)
 
-$(C_OBJS): libserve.h
-
-$(GO_SHARED_LIB): $(GO_SRCS)
-	mkdir -p $(INST_LIB_DIR)
-	echo $(GO) && \
+$(GO_BUILD_LIB): $(GO_SRCS)
+	test -n "$(GO)" || { echo "Go is required to build goserveR" >&2; exit 1; }
 	CGO_CFLAGS="-I$(SRCDIR)" \
 	$(GO) build -o $@ -buildmode=c-shared -ldflags "$(GO_LDFLAGS)" $(GOSRC_DIR)/serve.go
-	cp $@ $(INST_GO_SHARED_LIB)
+
+$(INST_GO_SHARED_LIB): $(GO_BUILD_LIB)
+	mkdir -p $(INST_GO_LIB_DIR)
+	cp $< $@
+
+endif
 
 clean:
-	rm -f $(SRCDIR)/*.o $(SRCDIR)/libserve.h $(SRCDIR)/libserve.so $(SRCDIR)/libserve.dylib \
-		$(SRCDIR)/symbols.rds $(SRCDIR)/*.so $(INST_LIB_DIR)/libserve.so $(INST_LIB_DIR)/libserve.dylib
+	rm -f $(SRCDIR)/*.o $(SRCDIR)/libserve.h $(SRCDIR)/libserve.bin $(SRCDIR)/libserve.so $(SRCDIR)/libserve.dylib \
+		$(SRCDIR)/symbols.rds $(SRCDIR)/*.so $(SRCDIR)/*.a \
+		$(SRCDIR)/../inst/go/libserve.so $(SRCDIR)/../inst/go/libserve.dylib

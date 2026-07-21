@@ -78,17 +78,19 @@ if (.Platform$OS.type != "windows") {
 # Test 3: TLS errors with logging
 cat("Testing TLS certificate errors with logging...\n")
 
-h_tls <- runServer(
-  dir = getwd(),
-  addr = "127.0.0.1:8301",
-  blocking = FALSE,
-  tls = TRUE,
-  certfile = "/nonexistent/cert.pem",
-  keyfile = "/nonexistent/key.pem",
-  silent = TRUE
+expect_error(
+  runServer(
+    dir = getwd(),
+    addr = "127.0.0.1:8301",
+    blocking = FALSE,
+    tls = TRUE,
+    certfile = "/nonexistent/cert.pem",
+    keyfile = "/nonexistent/key.pem",
+    silent = TRUE
+  ),
+  pattern = "must exist",
+  info = "Missing TLS credentials should fail before starting a server"
 )
-
-Sys.sleep(2)
 
 servers_tls <- listServers()
 expect_true(
@@ -96,9 +98,6 @@ expect_true(
   info = "R should remain responsive after TLS error"
 )
 cat("R session remains intact after TLS error\n")
-
-shutdownServer(h_tls)
-Sys.sleep(0.5)
 
 # Test 4: Verify panic recovery doesn't crash R
 cat("Testing that Go panics are recovered and don't crash R...\n")

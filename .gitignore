@@ -2,7 +2,12 @@ src/*.so
 src/*.o
 build.log
 src/*.a
+src/*.bin
 ..Rcheck
 src/*rds
 src/*rdx
 src/serve.h
+src/libserve.h
+inst/libs/
+inst/go/
+.certs/

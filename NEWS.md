@@ -1,8 +1,12 @@
 # goserveR NEWS
 
-## goserveR 0.1.3-0.90000 (development)
+## goserveR 0.1.3-0.9000 (development)
 
-- Dynamic authentication management functions (`addAuthKey()`, `removeAuthKey()`, `listAuthKeys()`) now work with the new server-based auth system.
+- Added `createTLSCertificate()` using `nanonext::write_cert()` for in-memory PEM generation and removed bundled development private keys and `mkcert` instructions.
+- Fixed Windows test hangs by shutting down asynchronous log workers cooperatively instead of terminating threads while they may hold locks.
+- Added a WebAssembly compatibility shim that allows installation in webR and reports that listening HTTP servers are unsupported there.
+- Installed the Go runtime library outside R's native-library directory while retaining a package-relative runtime search path.
+- Dynamic authentication management now provides full CRUD operations through `addAuthKey()`, `listAuthKeys()`, `updateAuthKey()`, `removeAuthKey()`, and `clearAuthKeys()`.
 - removed unsafe pointer arithmetic in Go.
 - Changed cph
 

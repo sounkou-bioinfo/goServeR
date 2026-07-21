@@ -36,7 +36,8 @@ runServer(
 
 \item{coop}{logical, enable COOP/COEP headers}
 
-\item{tls}{logical, enable TLS (HTTPS)}
+\item{tls}{Logical to enable TLS (HTTPS), or an object returned by
+\code{createTLSCertificate()} to enable TLS with generated PEM credentials.}
 
 \item{certfile}{path to TLS certificate file}
 
@@ -72,14 +73,14 @@ h <- runServer(dir = ".", addr = "0.0.0.0:8080", blocking = FALSE)
 
 # Start a server with static auth keys (backward compatible)
 h <- runServer(
-    dir = ".", addr = "0.0.0.0:8080", blocking = FALSE,
-    auth_keys = c("secret123", "token456")
+  dir = ".", addr = "0.0.0.0:8080", blocking = FALSE,
+  auth_keys = c("secret123", "token456")
 )
 
 # Start a server with dynamic auth system
 h <- runServer(
-    dir = ".", addr = "0.0.0.0:8080", blocking = FALSE,
-    auth = TRUE, initial_keys = c("secret123")
+  dir = ".", addr = "0.0.0.0:8080", blocking = FALSE,
+  auth = TRUE, initial_keys = c("secret123")
 )
 
 # Manage auth keys dynamically (only with auth=TRUE)
@@ -90,19 +91,19 @@ listAuthKeys(auth)
 
 # Start a server serving multiple directories
 h <- runServer(
-    dir = c("./data", "./docs", "."),
-    prefix = c("/api/data", "/docs", "/files"),
-    addr = "0.0.0.0:8080",
-    blocking = FALSE
+  dir = c("./data", "./docs", "."),
+  prefix = c("/api/data", "/docs", "/files"),
+  addr = "0.0.0.0:8080",
+  blocking = FALSE
 )
 
 # Start a server with custom log handler
 logfile <- tempfile("server_", fileext = ".log")
 h <- runServer(
-    dir = ".", addr = "0.0.0.0:8080", blocking = FALSE,
-    log_handler = function(handler, message, user) {
-        cat("[CUSTOM]", message, file = logfile, append = TRUE)
-    }
+  dir = ".", addr = "0.0.0.0:8080", blocking = FALSE,
+  log_handler = function(handler, message, user) {
+    cat("[CUSTOM]", message, file = logfile, append = TRUE)
+  }
 )
 
 # List all running background servers
